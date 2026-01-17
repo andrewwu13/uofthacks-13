@@ -101,6 +101,9 @@ function App() {
           108 module templates (6 genres × 6 types × 3 variations) •
           Click any module to inspect
         </p>
+        <p style={{ color: '#737373', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+          <a href="/tracking-test.html" style={{ color: '#6366f1' }}>/tracking-test.html</a> to test telemetry tracking
+        </p>
 
         {/* Control Buttons */}
         <div className="app-controls">
