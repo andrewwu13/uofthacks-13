@@ -6,6 +6,7 @@
 import { MouseTracker } from './mouse-tracker';
 import { ScrollTracker } from './scroll-tracker';
 import { InteractionTracker } from './interaction-tracker';
+import { FrustrationTracker } from './frustration-tracker';
 import { EventBuffer } from './event-buffer';
 import type { TelemetryEvent, TelemetryBatch, DeviceType } from './types';
 
@@ -44,6 +45,7 @@ export class TelemetryManager {
   private mouseTracker: MouseTracker;
   private scrollTracker: ScrollTracker;
   private interactionTracker: InteractionTracker;
+  private frustrationTracker: FrustrationTracker;
   private eventBuffer: EventBuffer;
   private isRunning: boolean = false;
   private batchCount: number = 0;
@@ -86,6 +88,11 @@ export class TelemetryManager {
       hoverThreshold: 200,
       onEvent: (event) => this.addEvent(event),
     });
+
+    this.frustrationTracker = new FrustrationTracker({
+      rageClickThreshold: 3,
+      onEvent: (event) => this.addEvent(event),
+    });
   }
 
   start(): void {
@@ -98,6 +105,7 @@ export class TelemetryManager {
     this.mouseTracker.start();
     this.scrollTracker.start();
     this.interactionTracker.start();
+    this.frustrationTracker.start();
   }
 
   stop(): void {
@@ -109,6 +117,7 @@ export class TelemetryManager {
     this.mouseTracker.stop();
     this.scrollTracker.stop();
     this.interactionTracker.stop();
+    this.frustrationTracker.stop();
     this.eventBuffer.stop();
   }
 
@@ -116,7 +125,12 @@ export class TelemetryManager {
     this.eventBuffer.addEvent(event);
     
     if (this.config.enableConsoleLog) {
-      console.log(`[Telemetry] ${event.type}:`, event);
+      // Highlight frustration events in console
+      if (['click_rage', 'dead_click', 'click_error', 'excessive_scroll'].includes(event.type)) {
+        console.warn(`[FrustrationSignal] ${event.type}:`, event);
+      } else {
+        console.log(`[Telemetry] ${event.type}:`, event);
+      }
     }
   }
 
@@ -126,13 +140,8 @@ export class TelemetryManager {
     if (this.config.enableConsoleLog) {
       console.group(`[TelemetryManager] Batch #${this.batchCount} flushed`);
       console.log('Session ID:', batch.session_id);
-      console.log('Device Type:', batch.device_type);
       console.log('Timestamp:', new Date(batch.timestamp * 1000).toISOString());
       console.log('Events:', batch.events.length);
-      
-      if (batch.motor) {
-        console.log('Motor Samples:', batch.motor.samples.length);
-      }
       
       // Log event breakdown
       const eventTypes = batch.events.reduce((acc, e) => {
@@ -141,7 +150,6 @@ export class TelemetryManager {
       }, {} as Record<string, number>);
       console.log('Event Breakdown:', eventTypes);
       
-      console.log('Full Batch:', batch);
       console.groupEnd();
     }
 

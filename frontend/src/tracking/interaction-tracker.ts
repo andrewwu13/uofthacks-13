@@ -59,6 +59,7 @@ export class InteractionTracker {
       if (
         element.hasAttribute('data-module-id') ||
         element.hasAttribute('data-track-id') ||
+        element.hasAttribute('data-track-context') ||
         element.tagName === 'A' ||
         element.tagName === 'BUTTON'
       ) {
@@ -85,6 +86,7 @@ export class InteractionTracker {
       is_loud: element.getAttribute('data-module-loud') === 'true',
       tag_name: element.tagName.toLowerCase(),
       class_name: element.className,
+      track_context: element.getAttribute('data-track-context'),
     };
   }
 

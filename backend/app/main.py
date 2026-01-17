@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import router as api_router
+from app.api.events import router as events_router
 from app.sse.publisher import sse_publisher
 from app.websocket.manager import manager
 from app.websocket.handlers import handle_websocket_connection
@@ -19,6 +20,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(events_router, prefix="/telemetry", tags=["Telemetry"])
 
 @app.get("/health")
 async def health_check():

@@ -199,3 +199,101 @@ we are using shopigy GraphQL Admin API, with shopigy CLI
 │        (session)        (cold store)   (pref drift)             │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+Endpoint structure:
+
+```
+POST /telemetry/events
+============================================================
+TELEMETRY PAYLOAD STRUCTURE
+Endpoint: POST /telemetry/events
+============================================================
+
+{
+  "session_id": "session_1737138005123_abc123",
+  "device_type": "desktop",
+  "timestamp": 1737138008,
+  "events": [
+    {
+      "ts": 1737138006,
+      "type": "click_rage",
+      "target_id": "submit_btn",
+      "position": {
+        "x": 500,
+        "y": 300
+      },
+      "duration_ms": null,
+      "metadata": {
+        "click_count": 5,
+        "duration_ms": 800
+      }
+    },
+    {
+      "ts": 1737138007,
+      "type": "hover",
+      "target_id": "product_card_1",
+      "position": {
+        "x": 200,
+        "y": 400
+      },
+      "duration_ms": 450,
+      "metadata": {
+        "track_context": "price"
+      }
+    },
+    {
+      "ts": 1737138007,
+      "type": "dead_click",
+      "target_id": "fake_button",
+      "position": {
+        "x": 300,
+        "y": 500
+      },
+      "metadata": {
+        "text": "Fake Button",
+        "cursor": "pointer"
+      }
+    },
+    {
+      "ts": 1737138008,
+      "type": "click_error",
+      "target_id": "error_btn",
+      "position": {
+        "x": 400,
+        "y": 600
+      },
+      "metadata": {
+        "error": "Simulated Click Error!"
+      }
+    }
+  ],
+  "motor": {
+    "session_id": "session_1737138005123_abc123",
+    "device": "mouse",
+    "t0": 1737138005,
+    "dt": 16,
+    "samples": [
+      [
+        100,
+        200
+      ],
+      [
+        105,
+        202
+      ],
+      [
+        110,
+        205
+      ],
+      [
+        118,
+        210
+      ],
+      [
+        125,
+        218
+      ]
+    ]
+  }
+}
+```
