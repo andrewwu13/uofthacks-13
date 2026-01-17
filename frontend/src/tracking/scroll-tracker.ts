@@ -62,13 +62,30 @@ export class ScrollTracker {
   private handleScroll = (): void => {
     const now = Date.now();
     const currentY = window.scrollY;
-    const dt = (now - this.lastScrollTime) / 1000; // seconds
+    // Prevent division by zero if updates happen too fast
+    const dt = Math.max((now - this.lastScrollTime) / 1000, 0.001); 
     
     // Calculate velocity and direction
     const deltaY = currentY - this.lastScrollY;
-    this.scrollVelocity = Math.abs(deltaY) / dt;
+    const velocity = Math.abs(deltaY) / dt;
+    this.scrollVelocity = velocity;
     this.scrollDirection = deltaY > 0 ? 'down' : deltaY < 0 ? 'up' : 'none';
     
+    // Excessive Scrolling Detection
+    // High velocity without stopping (e.g. searching for something)
+    if (velocity > 2500) { // Threshold for "frantic" scrolling
+      this.config.onEvent({
+        ts: Math.floor(now / 1000),
+        type: 'excessive_scroll',
+        target_id: 'viewport',
+        metadata: {
+          velocity,
+          direction: this.scrollDirection,
+          scroll_percent: this.getScrollPercent()
+        }
+      });
+    }
+
     this.lastScrollY = currentY;
     this.lastScrollTime = now;
     
