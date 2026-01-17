@@ -64,6 +64,59 @@ One issue i can foresee is performance. It seems like with multiple agents all r
 
 we are using shopigy GraphQL Admin API, with shopigy CLI 
 
+Endpoints:
+Server -> Client
+
+/products: 
+This returns a json containing relevant information to filling the modules.
+Returns a json object of format 
+{ "id": 123456789, "store_domain": "allbirds.com", "title": "Men's Wool Runners", "handle": "mens-wool-runners", "url": "https://allbirds.com/products/mens-wool-runners", "price": "98.00", "currency": "USD", "image": "https://cdn.shopify.com/s/files/.../shoe.jpg", "vendor": "Allbirds", "description": "Our cozy sneaker made with ZQ Merino wool..." }
+
+SSE: layout:update
+{
+  "layout_id": "home_v3_hash",
+  "mutations": [
+    { "op": "add", "slot": "feed", "module": "carousel_neo_A" },
+    { "op": "remove", "module": "grid_minimal_B" }
+  ]
+}
+Old endpoints are too granular and can cause UI thrashing, single layout directive enables reversible and traceable decisions
+
+Client -> Server
+should send compressed, batched, time-bucketed telemetry frames
+
+POST /telemetry/motor
+{
+  "session_id": "abc123",
+  "device": "mouse",
+  "t0": 1737052412,
+  "dt": 16,
+  "samples": [
+    [512, 341],
+    [518, 339],
+    [530, 335],
+    [529, 337]
+  ]
+
+}
+POST /telemetry/events
+{
+  "session_id": "abc123",
+  "events": [
+    {
+      "ts": 1737052415,
+      "type": "hover",
+      "target_id": "module_4",
+      "duration_ms": 3000
+    },
+    {
+      "ts": 1737052419,
+      "type": "enter_viewport",
+      "target_id": "module_5"
+    }
+  ]
+}
+
 ---
 
 ## Implementation Status (Last Updated: 2026-01-17)
