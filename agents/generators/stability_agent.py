@@ -1,9 +1,9 @@
 """
 Stability Agent - Conservative layout generation
 Generates safe, validated layouts for user retention
+Uses Backboard.io for stateful thread management
 """
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+from integrations.backboard.thread_manager import thread_manager
 from agents.config import agent_config
 import json
 import os
@@ -14,32 +14,19 @@ class StabilityAgent:
     Conservative anchor of the user experience.
     Generates layouts optimized for retention with 70% confidence threshold.
     Only serves modules the user has implicitly validated.
+    Uses Backboard.io for stateful context preservation.
     """
     
     def __init__(self):
-        self._model = None
-        self._prompt = None
+        self._system_prompt = None
         self.confidence_threshold = agent_config.stability_confidence_threshold
     
     @property
-    def model(self):
-        """Lazy initialization of LLM model"""
-        if self._model is None:
-            self._model = ChatOpenAI(
-                model=agent_config.stability_agent_model,
-                temperature=0.3,  # Low temperature for consistency
-            )
-        return self._model
-    
-    @property
-    def prompt(self):
-        """Lazy initialization of prompt template"""
-        if self._prompt is None:
-            self._prompt = ChatPromptTemplate.from_messages([
-                ("system", self._load_prompt()),
-                ("user", "{input}"),
-            ])
-        return self._prompt
+    def system_prompt(self) -> str:
+        """Lazy load system prompt"""
+        if self._system_prompt is None:
+            self._system_prompt = self._load_prompt()
+        return self._system_prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
@@ -54,6 +41,7 @@ Only recommend modules with high confidence scores."""
     
     async def generate(
         self,
+        session_id: str,
         preferences: dict,
         available_modules: list[dict],
         page_type: str,
@@ -62,6 +50,7 @@ Only recommend modules with high confidence scores."""
         Generate a conservative layout proposal.
         
         Args:
+            session_id: User session identifier for thread management
             preferences: Aggregated user preferences
             available_modules: List of available UI modules
             page_type: Type of page (home, product, etc.)
@@ -69,6 +58,9 @@ Only recommend modules with high confidence scores."""
         Returns:
             Layout proposal with module selections
         """
+        # Inject user preferences early in thread for in-context learning
+        await thread_manager.add_preference_context(session_id, preferences)
+        
         # Filter modules by confidence threshold
         confident_modules = [
             m for m in available_modules
@@ -82,13 +74,18 @@ Only recommend modules with high confidence scores."""
             "threshold": self.confidence_threshold,
         }
         
-        chain = self.prompt | self.model
-        response = await chain.ainvoke({"input": json.dumps(input_data)})
+        prompt = f"{self.system_prompt}\n\nGenerate a layout for:\n{json.dumps(input_data)}"
+        
+        response = await thread_manager.run_with_model(
+            session_id=session_id,
+            model=agent_config.stability_agent_model,
+            prompt=prompt,
+        )
         
         try:
-            return json.loads(response.content)
+            return json.loads(response)
         except json.JSONDecodeError:
-            return {"sections": [], "raw_response": response.content}
+            return {"sections": [], "raw_response": response}
 
 
 stability_agent = StabilityAgent()

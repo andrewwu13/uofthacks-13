@@ -1,9 +1,11 @@
 """
 Backboard.io API client
 For stateful thread management and agentic memory
+Based on official Backboard API docs: https://app.backboard.io/api
 """
 import httpx
-from typing import Optional, Dict, Any
+import os
+from typing import Optional, Dict, Any, List
 
 
 class BackboardClient:
@@ -13,23 +15,76 @@ class BackboardClient:
     """
     
     def __init__(self, api_key: str = ""):
-        self.api_key = api_key
-        self.base_url = "https://api.backboard.io/v1"
-        self.client = httpx.AsyncClient()
+        self.api_key = api_key or os.environ.get("BACKBOARD_API_KEY", "")
+        self.base_url = "https://app.backboard.io/api"
+        self.client = httpx.AsyncClient(timeout=60.0)
+        self._assistant_id: Optional[str] = None
     
     @property
     def headers(self) -> dict:
         return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
+            "X-API-Key": self.api_key,
         }
     
-    async def create_thread(self, metadata: Optional[Dict[str, Any]] = None) -> dict:
-        """Create a new conversation thread"""
+    async def create_assistant(
+        self,
+        name: str = "UofTHacks Agent",
+        system_prompt: str = "You are a helpful AI assistant.",
+        tools: Optional[List[Dict]] = None,
+    ) -> dict:
+        """Create an assistant"""
+        payload = {
+            "name": name,
+            "system_prompt": system_prompt,
+        }
+        if tools:
+            payload["tools"] = tools
+        
         response = await self.client.post(
-            f"{self.base_url}/threads",
+            f"{self.base_url}/assistants",
             headers=self.headers,
-            json={"metadata": metadata or {}},
+            json=payload,
+        )
+        response.raise_for_status()
+        result = response.json()
+        self._assistant_id = result.get("assistant_id")
+        return result
+    
+    async def get_or_create_assistant(self, name: str = "UofTHacks Agent") -> str:
+        """Get existing assistant or create a new one"""
+        if self._assistant_id:
+            return self._assistant_id
+        
+        # Try to list existing assistants
+        try:
+            response = await self.client.get(
+                f"{self.base_url}/assistants",
+                headers=self.headers,
+            )
+            response.raise_for_status()
+            assistants = response.json()
+            
+            # Find existing assistant by name
+            for assistant in assistants:
+                if assistant.get("name") == name:
+                    self._assistant_id = assistant.get("assistant_id")
+                    return self._assistant_id
+        except Exception:
+            pass
+        
+        # Create new assistant
+        result = await self.create_assistant(name=name)
+        return result.get("assistant_id")
+    
+    async def create_thread(self, assistant_id: Optional[str] = None) -> dict:
+        """Create a new conversation thread under an assistant"""
+        if not assistant_id:
+            assistant_id = await self.get_or_create_assistant()
+        
+        response = await self.client.post(
+            f"{self.base_url}/assistants/{assistant_id}/threads",
+            headers=self.headers,
+            json={},
         )
         response.raise_for_status()
         return response.json()
@@ -46,19 +101,27 @@ class BackboardClient:
     async def add_message(
         self,
         thread_id: str,
-        role: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        llm_provider: str = "openai",
+        model_name: str = "gpt-4o",
+        memory: str = "Auto",
+        stream: bool = False,
     ) -> dict:
-        """Add message to thread"""
+        """Add message to thread and get response"""
+        # Use form data as per API docs
+        data = {
+            "content": content,
+            "llm_provider": llm_provider,
+            "model_name": model_name,
+            "memory": memory,
+            "stream": str(stream).lower(),
+            "send_to_llm": "true",
+        }
+        
         response = await self.client.post(
             f"{self.base_url}/threads/{thread_id}/messages",
             headers=self.headers,
-            json={
-                "role": role,
-                "content": content,
-                "metadata": metadata or {},
-            },
+            data=data,
         )
         response.raise_for_status()
         return response.json()
@@ -66,25 +129,26 @@ class BackboardClient:
     async def run_inference(
         self,
         thread_id: str,
-        model: str = "gpt-4o",
-        system_prompt: Optional[str] = None,
-    ) -> dict:
-        """Run inference on thread with specified model"""
-        payload = {"model": model}
-        if system_prompt:
-            payload["system"] = system_prompt
-        
-        response = await self.client.post(
-            f"{self.base_url}/threads/{thread_id}/runs",
-            headers=self.headers,
-            json=payload,
+        prompt: str,
+        llm_provider: str = "google",
+        model_name: str = "gemini-2.0-flash",
+        memory: str = "Auto",
+    ) -> str:
+        """Run inference on thread with specified model and return content"""
+        result = await self.add_message(
+            thread_id=thread_id,
+            content=prompt,
+            llm_provider=llm_provider,
+            model_name=model_name,
+            memory=memory,
+            stream=False,
         )
-        response.raise_for_status()
-        return response.json()
+        return result.get("content", "")
     
     async def close(self):
         """Close HTTP client"""
         await self.client.aclose()
 
 
+# Singleton instance
 backboard_client = BackboardClient()

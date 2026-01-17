@@ -5,6 +5,15 @@ Manages model transitions and context preservation
 from integrations.backboard.client import backboard_client
 
 
+# Model mapping: our config names -> Backboard provider/model pairs
+MODEL_MAPPING = {
+    "gemini-2.5-flash": ("google", "gemini-2.5-flash"),
+    "gemini-2.5-pro": ("google", "gemini-2.5-pro"),
+    "gpt-4o": ("openai", "gpt-4o"),
+    "gpt-4o-mini": ("openai", "gpt-4o-mini"),
+}
+
+
 class ThreadManager:
     """
     Manages stateful threads for seamless model transitions.
@@ -20,10 +29,8 @@ class ThreadManager:
         if session_id in self.session_threads:
             return self.session_threads[session_id]
         
-        thread = await self.client.create_thread(
-            metadata={"session_id": session_id}
-        )
-        thread_id = thread["id"]
+        thread = await self.client.create_thread()
+        thread_id = thread.get("thread_id")
         self.session_threads[session_id] = thread_id
         return thread_id
     
@@ -32,13 +39,15 @@ class ThreadManager:
         session_id: str,
         preferences: dict,
     ):
-        """Add user preferences as context early in thread"""
+        """Add user preferences as context early in thread (uses memory)"""
         thread_id = await self.get_or_create_thread(session_id)
+        
+        # Add preferences as a message with memory enabled
         await self.client.add_message(
             thread_id=thread_id,
-            role="system",
-            content=f"User preferences: {preferences}",
-            metadata={"type": "preference_context"},
+            content=f"User preferences context: {preferences}",
+            memory="Auto",
+            stream=False,
         )
     
     async def run_with_model(
@@ -46,24 +55,24 @@ class ThreadManager:
         session_id: str,
         model: str,
         prompt: str,
+        memory_mode: str = "off",  # Default to off to save costs on high-frequency calls
     ) -> str:
         """Run inference with specified model"""
         thread_id = await self.get_or_create_thread(session_id)
         
-        # Add user message
-        await self.client.add_message(
+        # Map our model name to Backboard provider/model
+        llm_provider, model_name = MODEL_MAPPING.get(model, ("google", "gemini-2.5-flash"))
+        
+        # Run inference and get response
+        content = await self.client.run_inference(
             thread_id=thread_id,
-            role="user",
-            content=prompt,
+            prompt=prompt,
+            llm_provider=llm_provider,
+            model_name=model_name,
+            memory=memory_mode,
         )
         
-        # Run inference
-        result = await self.client.run_inference(
-            thread_id=thread_id,
-            model=model,
-        )
-        
-        return result.get("content", "")
+        return content
 
 
 thread_manager = ThreadManager()

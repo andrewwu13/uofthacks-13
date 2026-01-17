@@ -82,7 +82,29 @@ One issue i can foresee is performance. It seems like with multiple agents all r
 
 ## 🤖 Agent Architecture
 
-```mermaid
+<<<<<<< HEAD
+#### Priority 0: Backboard.io Preference Reinforcement
+- [ ] **Continuous Preference Reinforcement**: As the user profile accumulates, periodically call `thread_manager.add_preference_context()` to reinforce the user's historical preferences early in the Backboard thread. This leverages in-context learning to improve LLM adaptation over time.
+- [ ] Implement a scheduler to sync preference snapshots from Redis/MongoDB into Backboard threads at regular intervals (e.g., every 30 seconds or on significant preference delta).
+- [ ] Add a mechanism to prune old preference context from threads to avoid context window overflow.
+
+#### Priority 1: Frontend Core (Required for MVP)
+- [ ] `frontend/src/tracking/` - Recreate telemetry trackers
+  - [ ] `mouse-tracker.ts` - Mouse position, velocity, acceleration
+  - [ ] `touch-tracker.ts` - Touch input, scroll velocity
+  - [ ] `scroll-tracker.ts` - Scroll position, direction, dwell time
+  - [ ] `interaction-tracker.ts` - Clicks, hovers, focus events
+  - [ ] `event-buffer.ts` - Batch dispatch to backend
+- [ ] `frontend/src/schema/` - Schema-driven rendering system
+  - [ ] `types.ts` - Layout schema TypeScript interfaces
+  - [ ] `registry.ts` - Component registry by module type + genre
+  - [ ] `renderer.tsx` - Dynamic component hydration from JSON
+- [ ] `frontend/src/realtime/` - Real-time layout updates
+  - [ ] `websocket-client.ts` - WebSocket with auto-reconnect
+  - [ ] `sse-client.ts` - SSE fallback
+  - [ ] `layout-subscriber.ts` - Abstraction with fallback logic
+
+
 flowchart TD
     subgraph Telemetry
         A[Mouse Tracker] --> D[Event Buffer]
@@ -118,7 +140,6 @@ flowchart TD
     end
     
     OUT -->|SSE/WebSocket| FE[Frontend]
-```
 
 ### Stream 1: Motor State (High Frequency, $0 Cost)
 - Runs near-constantly using pure Python algorithms
