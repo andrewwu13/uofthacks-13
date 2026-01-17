@@ -111,6 +111,11 @@ we are using shopigy GraphQL Admin API, with shopigy CLI
 
 ### ❌ TODO: Next Implementation Steps
 
+#### Priority 0: Backboard.io Preference Reinforcement
+- [ ] **Continuous Preference Reinforcement**: As the user profile accumulates, periodically call `thread_manager.add_preference_context()` to reinforce the user's historical preferences early in the Backboard thread. This leverages in-context learning to improve LLM adaptation over time.
+- [ ] Implement a scheduler to sync preference snapshots from Redis/MongoDB into Backboard threads at regular intervals (e.g., every 30 seconds or on significant preference delta).
+- [ ] Add a mechanism to prune old preference context from threads to avoid context window overflow.
+
 #### Priority 1: Frontend Core (Required for MVP)
 - [ ] `frontend/src/tracking/` - Recreate telemetry trackers
   - [ ] `mouse-tracker.ts` - Mouse position, velocity, acceleration

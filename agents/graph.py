@@ -14,6 +14,7 @@ from agents.streams.variance_auditor_stream import variance_auditor_stream
 from agents.generators.stability_agent import stability_agent
 from agents.generators.exploratory_agent import exploratory_agent
 from agents.reducers.preference_reducer import preference_reducer
+from agents.synthesizers.profile_synthesizer import profile_synthesizer
 
 
 class AgentState(TypedDict):
@@ -39,8 +40,8 @@ class AgentState(TypedDict):
     stability_proposal: dict
     exploratory_proposal: dict
     
-    # Final output
-    final_layout: dict
+    # Final output - User Profile for vectorization
+    user_profile: dict
 
 
 def motor_state_node(state: AgentState) -> dict:
@@ -61,9 +62,10 @@ def motor_state_node(state: AgentState) -> dict:
 async def context_analysis_node(state: AgentState) -> dict:
     """
     Context Analyst agent (Stream 2).
-    Uses fast LLM to correlate motor state with UI interactions.
+    Uses Backboard.io for stateful thread management.
     Runs on 5-second batch intervals.
     """
+    session_id = state.get("session_id", "")
     motor_state = {
         "state": state.get("motor_state", "idle"),
         "confidence": state.get("motor_confidence", 0.0),
@@ -72,6 +74,7 @@ async def context_analysis_node(state: AgentState) -> dict:
     current_preferences = state.get("current_preferences", {})
     
     result = await context_analyst_stream.process(
+        session_id=session_id,
         motor_state=motor_state,
         interactions=interactions,
         current_preferences=current_preferences,
@@ -83,9 +86,10 @@ async def context_analysis_node(state: AgentState) -> dict:
 async def variance_audit_node(state: AgentState) -> dict:
     """
     Variance Auditor agent (Stream 3).
+    Uses Backboard.io for stateful thread management.
     Analyzes engagement with "loud" A/B testing modules.
-    Runs on 5-second batch intervals.
     """
+    session_id = state.get("session_id", "")
     loud_events = state.get("loud_module_events", [])
     
     # Skip if no loud module events
@@ -93,11 +97,12 @@ async def variance_audit_node(state: AgentState) -> dict:
         return {"variance_audit": {"active": False, "signals": []}}
     
     baseline = {
-        "avg_dwell_time": 2000,  # Default baseline
+        "avg_dwell_time": 2000,
         "avg_scroll_velocity": 300,
     }
     
     result = await variance_auditor_stream.process(
+        session_id=session_id,
         loud_module_events=loud_events,
         baseline_engagement=baseline,
     )
@@ -131,14 +136,15 @@ def preference_reduction_node(state: AgentState) -> dict:
 async def stability_generation_node(state: AgentState) -> dict:
     """
     Stability Agent: Generate conservative, validated layout.
-    Uses 70% confidence threshold for module selection.
+    Uses Backboard.io for stateful thread management.
     """
+    session_id = state.get("session_id", "")
     preferences = state.get("updated_preferences", {})
     
-    # Get available modules (would come from registry in production)
     available_modules = _get_available_modules()
     
     result = await stability_agent.generate(
+        session_id=session_id,
         preferences=preferences,
         available_modules=available_modules,
         page_type="home",
@@ -150,11 +156,11 @@ async def stability_generation_node(state: AgentState) -> dict:
 async def exploratory_generation_node(state: AgentState) -> dict:
     """
     Exploratory Agent: Generate novel layout with A/B testing modules.
-    Higher temperature, probes untested aesthetic territories.
+    Uses Backboard.io for stateful thread management.
     """
+    session_id = state.get("session_id", "")
     preferences = state.get("updated_preferences", {})
     
-    # Find genres not yet tested
     genre_weights = preferences.get("genre_weights", {})
     all_genres = ["base", "minimalist", "neobrutalist", "glassmorphism", "loud"]
     preference_voids = [g for g in all_genres if genre_weights.get(g, 0) < 0.3]
@@ -162,6 +168,7 @@ async def exploratory_generation_node(state: AgentState) -> dict:
     available_modules = _get_available_modules()
     
     result = await exploratory_agent.generate(
+        session_id=session_id,
         preferences=preferences,
         available_modules=available_modules,
         preference_voids=preference_voids,
@@ -171,40 +178,28 @@ async def exploratory_generation_node(state: AgentState) -> dict:
     return {"exploratory_proposal": result}
 
 
-def layout_synthesis_node(state: AgentState) -> dict:
+async def profile_synthesis_node(state: AgentState) -> dict:
     """
-    Synthesize final layout from stability and exploratory proposals.
-    Balances safe choices with novel testing modules.
+    Synthesize User Profile from stability and exploratory proposals.
+    Uses 80/20 weighting to produce a vectorizable JSON.
     """
+    session_id = state.get("session_id", "default_session")
     stability = state.get("stability_proposal", {})
     exploratory = state.get("exploratory_proposal", {})
-    preferences = state.get("updated_preferences", {})
+    motor_state = state.get("motor_state", "idle")
+    motor_confidence = state.get("motor_confidence", 0.0)
+    context_analysis = state.get("context_analysis", {})
     
-    # Merge proposals: Use stability as base, inject exploratory loud modules
-    final_sections = stability.get("sections", [])
+    user_profile = await profile_synthesizer.synthesize(
+        session_id=session_id,
+        stability_proposal=stability,
+        exploratory_proposal=exploratory,
+        motor_state=motor_state,
+        motor_confidence=motor_confidence,
+        context_analysis=context_analysis,
+    )
     
-    # Add 1-2 loud modules from exploratory proposal
-    exploratory_sections = exploratory.get("sections", [])
-    for section in exploratory_sections:
-        for module in section.get("modules", []):
-            if module.get("is_loud"):
-                # Insert loud module into a safe position
-                if final_sections:
-                    final_sections[-1].setdefault("modules", []).append(module)
-                break  # Only add one loud module per synthesis
-    
-    # Apply design token mutations if suggested
-    design_tokens = exploratory.get("token_mutations", {})
-    
-    return {
-        "final_layout": {
-            "version": "1.0.0",
-            "session_id": state.get("session_id", ""),
-            "sections": final_sections,
-            "design_tokens": design_tokens,
-            "preferences_snapshot": preferences,
-        }
-    }
+    return {"user_profile": user_profile}
 
 
 def _get_available_modules() -> list[dict]:
@@ -231,7 +226,7 @@ def create_agent_graph() -> StateGraph:
     4. Preference reduction (combines all streams)
     5. Stability generation (parallel with exploratory)
     6. Exploratory generation (parallel with stability)
-    7. Layout synthesis (final merge)
+    7. Profile synthesis (80/20 weighted merge -> vectorizable JSON)
     """
     workflow = StateGraph(AgentState)
     
@@ -242,7 +237,7 @@ def create_agent_graph() -> StateGraph:
     workflow.add_node("preference_reduction", preference_reduction_node)
     workflow.add_node("stability_generation", stability_generation_node)
     workflow.add_node("exploratory_generation", exploratory_generation_node)
-    workflow.add_node("layout_synthesis", layout_synthesis_node)
+    workflow.add_node("profile_synthesis", profile_synthesis_node)
     
     # Entry: Start all three streams
     workflow.add_edge(START, "motor_state")
@@ -258,12 +253,12 @@ def create_agent_graph() -> StateGraph:
     workflow.add_edge("preference_reduction", "stability_generation")
     workflow.add_edge("preference_reduction", "exploratory_generation")
     
-    # Both generators feed into synthesis
-    workflow.add_edge("stability_generation", "layout_synthesis")
-    workflow.add_edge("exploratory_generation", "layout_synthesis")
+    # Both generators feed into profile synthesis
+    workflow.add_edge("stability_generation", "profile_synthesis")
+    workflow.add_edge("exploratory_generation", "profile_synthesis")
     
-    # Synthesis is final
-    workflow.add_edge("layout_synthesis", END)
+    # Profile synthesis is final
+    workflow.add_edge("profile_synthesis", END)
     
     return workflow.compile()
 
@@ -290,7 +285,7 @@ async def run_layout_generation(
         current_preferences: Current preference weights
         
     Returns:
-        Generated layout directive
+        User Profile JSON for vectorization and module matching
     """
     initial_state: AgentState = {
         "session_id": session_id,
@@ -306,8 +301,9 @@ async def run_layout_generation(
         "updated_preferences": {},
         "stability_proposal": {},
         "exploratory_proposal": {},
-        "final_layout": {},
+        "user_profile": {},
     }
     
     result = await agent_graph.ainvoke(initial_state)
-    return result.get("final_layout", {})
+    return result.get("user_profile", {})
+

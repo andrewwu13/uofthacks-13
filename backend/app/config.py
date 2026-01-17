@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     
+    # Backboard
+    BACKBOARD_API_KEY: str = ""
+    
     # App
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
