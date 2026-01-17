@@ -28,7 +28,12 @@ export type EventType =
   | 'leave_viewport'
   | 'focus'
   | 'blur'
-  | 'scroll_stop';
+  | 'scroll_stop'
+  | 'click_rage'
+  | 'dead_click'
+  | 'click_error'
+  | 'excessive_scroll'
+  | 'visibility_change';
 
 /** Single telemetry event */
 export interface TelemetryEvent {

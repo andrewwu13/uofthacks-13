@@ -111,6 +111,75 @@ export function TrackingDemo() {
         </div>
       </section>
 
+      {/* Frustration Signal Tests */}
+      <section className="test-modules">
+        <h2 style={{color: '#ef4444'}}>😤 Frustration Signal Tests</h2>
+        <p className="test-instructions">Test click rage, dead clicks, and errors.</p>
+        
+        <div className="module-grid">
+          {/* Click Rage Test */}
+          <div className="test-module" data-module-id="test_rage">
+            <h3>Click Rage Test</h3>
+            <p>Click me rapidly (3+ times in 1s)</p>
+            <button 
+              data-track-id="rage_btn"
+              onClick={() => {}}
+            >
+              Don't Click Me!
+            </button>
+          </div>
+
+          {/* Dead Click Test */}
+          <div className="test-module" data-module-id="test_dead">
+            <h3>Dead Click Test</h3>
+            <p>This looks like a button but isn't</p>
+            {/* Visual fake button but no interactivity */}
+            <div 
+              style={{
+                background: '#3b82f6',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                textAlign: 'center',
+                cursor: 'pointer', // Suggests interactive
+                display: 'inline-block',
+                marginTop: '10px'
+              }}
+              data-track-id="dead_element"
+            >
+              Fake Button
+            </div>
+          </div>
+
+          {/* Click Error Test */}
+          <div className="test-module" data-module-id="test_error">
+            <h3>JS Error Test</h3>
+            <p>Clicking this throws an error</p>
+            <button 
+              data-track-id="error_btn"
+              onClick={() => {
+                throw new Error("Simulated Click Error!");
+              }}
+            >
+              Throw Error
+            </button>
+          </div>
+          
+           {/* Context Test */}
+           <div className="test-module" data-module-id="test_context">
+            <h3>Context Test</h3>
+            <p>Hover over the price</p>
+            <div 
+              style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace' }}
+              data-track-context="price"
+              data-track-id="test_price"
+            >
+              $999.00
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Interactive Test Modules */}
       <section className="test-modules">
         <h2>Interactive Test Modules</h2>
