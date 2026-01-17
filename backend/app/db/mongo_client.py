@@ -15,7 +15,7 @@ class MongoClient:
     async def connect(self):
         """Connect to MongoDB"""
         self.client = AsyncIOMotorClient(settings.MONGODB_URL)
-        self.db = self.client[settings.MONGODB_DATABASE]
+        self.db = self.client[settings.MONGODB_DB]
     
     async def disconnect(self):
         """Disconnect from MongoDB"""
