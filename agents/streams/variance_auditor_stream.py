@@ -3,9 +3,10 @@ Stream 3: Variance Auditor - analyzes "loud" module responses for A/B testing
 Runs on 5-second batch interval, only active when loud modules are in viewport
 """
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from agents.config import agent_config
 import json
+import os
 
 
 class VarianceAuditorStream:
@@ -15,19 +16,34 @@ class VarianceAuditorStream:
     """
     
     def __init__(self):
-        self.model = ChatOpenAI(
-            model=agent_config.variance_auditor_model,
-            temperature=0.2,
-        )
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", self._load_prompt()),
-            ("user", "{input}"),
-        ])
+        self._model = None
+        self._prompt = None
+    
+    @property
+    def model(self):
+        """Lazy initialization of LLM model"""
+        if self._model is None:
+            self._model = ChatOpenAI(
+                model=agent_config.variance_auditor_model,
+                temperature=0.2,
+            )
+        return self._model
+    
+    @property
+    def prompt(self):
+        """Lazy initialization of prompt template"""
+        if self._prompt is None:
+            self._prompt = ChatPromptTemplate.from_messages([
+                ("system", self._load_prompt()),
+                ("user", "{input}"),
+            ])
+        return self._prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
+        prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "variance_auditor.txt")
         try:
-            with open("agents/prompts/variance_auditor.txt") as f:
+            with open(prompt_path) as f:
                 return f.read()
         except FileNotFoundError:
             return "You are a variance auditor. Analyze A/B test results from loud modules."

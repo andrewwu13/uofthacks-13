@@ -3,9 +3,10 @@ Stability Agent - Conservative layout generation
 Generates safe, validated layouts for user retention
 """
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from agents.config import agent_config
 import json
+import os
 
 
 class StabilityAgent:
@@ -16,20 +17,35 @@ class StabilityAgent:
     """
     
     def __init__(self):
-        self.model = ChatOpenAI(
-            model=agent_config.stability_agent_model,
-            temperature=0.3,  # Low temperature for consistency
-        )
+        self._model = None
+        self._prompt = None
         self.confidence_threshold = agent_config.stability_confidence_threshold
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", self._load_prompt()),
-            ("user", "{input}"),
-        ])
+    
+    @property
+    def model(self):
+        """Lazy initialization of LLM model"""
+        if self._model is None:
+            self._model = ChatOpenAI(
+                model=agent_config.stability_agent_model,
+                temperature=0.3,  # Low temperature for consistency
+            )
+        return self._model
+    
+    @property
+    def prompt(self):
+        """Lazy initialization of prompt template"""
+        if self._prompt is None:
+            self._prompt = ChatPromptTemplate.from_messages([
+                ("system", self._load_prompt()),
+                ("user", "{input}"),
+            ])
+        return self._prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
+        prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "stability_agent.txt")
         try:
-            with open("agents/prompts/stability_agent.txt") as f:
+            with open(prompt_path) as f:
                 return f.read()
         except FileNotFoundError:
             return """You are a stability agent focused on user retention.

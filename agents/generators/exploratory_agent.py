@@ -3,9 +3,10 @@ Exploratory Agent - Novel layout generation
 Drives UI evolution by testing untested aesthetic territories
 """
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from agents.config import agent_config
 import json
+import os
 
 
 class ExploratoryAgent:
@@ -16,19 +17,34 @@ class ExploratoryAgent:
     """
     
     def __init__(self):
-        self.model = ChatOpenAI(
-            model=agent_config.exploratory_agent_model,
-            temperature=agent_config.exploratory_temperature,  # High temperature
-        )
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", self._load_prompt()),
-            ("user", "{input}"),
-        ])
+        self._model = None
+        self._prompt = None
+    
+    @property
+    def model(self):
+        """Lazy initialization of LLM model"""
+        if self._model is None:
+            self._model = ChatOpenAI(
+                model=agent_config.exploratory_agent_model,
+                temperature=agent_config.exploratory_temperature,  # High temperature
+            )
+        return self._model
+    
+    @property
+    def prompt(self):
+        """Lazy initialization of prompt template"""
+        if self._prompt is None:
+            self._prompt = ChatPromptTemplate.from_messages([
+                ("system", self._load_prompt()),
+                ("user", "{input}"),
+            ])
+        return self._prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
+        prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "exploratory_agent.txt")
         try:
-            with open("agents/prompts/exploratory_agent.txt") as f:
+            with open(prompt_path) as f:
                 return f.read()
         except FileNotFoundError:
             return """You are an exploratory agent focused on UI evolution.
