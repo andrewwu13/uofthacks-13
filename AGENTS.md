@@ -61,3 +61,141 @@ Mainly, the products which should be integrated are the shopify APIs and more no
 
 Andrew’s notes:
 One issue i can foresee is performance. It seems like with multiple agents all running in parallel combined with real-time streaming, we need to figure out the most efficient options. Any feature that relies on an agent response needs to be fast enough to create real-time updates. Agents need to run in parallel, and we need to reduce downtime so agents are always generating results. I immediately think of using a queue to handle SSE to agent reasoning. Also need to implement a caching layer to avoid regenerating the same responses to a similar event. We can use Redis for our primary real-time cache, so storing current user motor state, session preference vector, last rendered layout hash. Also need semantic caching for LLM calls, so use embedding-based cache with Redis + vector search or Pinecone to store input summary embedding and model output. Before calling an LLM, we embed the prompt summary and use cosine similarity to see if can reuse an output. Layout can be cached as well: we cache the layout directives in JSON and key it with the vector page type and device type, so frontend can just rehydrate components. Use Kafka/RedPanda for event streams
+
+we are using shopigy GraphQL Admin API, with shopigy CLI 
+
+---
+
+## Implementation Status (Last Updated: 2026-01-17)
+
+### ✅ Completed
+
+#### Agents Layer (`/agents`)
+- **LangGraph Orchestration** (`graph.py`) - 7-node workflow with parallel stream execution
+- **3 Processing Streams:**
+  - `motor_state_stream.py` - Pure Python, ~100ms, $0 cost (velocity/acceleration analysis)
+  - `context_analyst_stream.py` - LLM (gpt-4o-mini), 5s batch, correlates motor state with UI
+  - `variance_auditor_stream.py` - LLM (gpt-4o-mini), 5s batch, evaluates "loud" A/B modules
+- **2 Layout Generators:**
+  - `stability_agent.py` - Conservative layout, 70% confidence threshold
+  - `exploratory_agent.py` - Novel layouts, high temperature, injects loud modules
+- **Algorithms** (`/algorithms`):
+  - `motor_analyzer.py` - Calculates velocity, acceleration, jerk from telemetry
+  - `state_classifier.py` - Threshold-based cognitive state classification
+- **Reducers** (`/reducers`):
+  - `preference_reducer.py` - Combines stream outputs into unified preference directive
+- **Prompts** (`/prompts`) - System prompts for all 4 agents
+
+#### Cache Layer (`/cache`)
+- `redis_cache.py` - Session state, motor state, layout hash (TTL-based)
+- `semantic_cache.py` - Embedding-based LLM response cache (cosine similarity)
+- `layout_cache.py` - JSON directives keyed by page + device type
+
+#### Workers (`/workers`)
+- `queue_config.py` - Kafka/RedPanda configuration
+- `event_consumer.py` - Telemetry event consumer
+- `agent_worker.py` - Background LangGraph task runner
+- `scheduler.py` - Cron jobs (layout regen, preference persistence, cleanup)
+
+#### Integrations (`/integrations`)
+- `shopify/` - API client + Pydantic models for products/collections
+- `backboard/` - Thread manager for stateful LLM context
+- `amplitude/` - Analytics event tracking
+
+#### Infrastructure
+- Docker configuration (`/docker`) - Dockerfiles + docker-compose with Redis, MongoDB, RedPanda
+- Shared utilities (`/shared`) - Constants, types, utility functions
+- Documentation (`/docs`) - Architecture, API reference, module development guide
+
+---
+
+### ❌ TODO: Next Implementation Steps
+
+#### Priority 1: Frontend Core (Required for MVP)
+- [ ] `frontend/src/tracking/` - Recreate telemetry trackers
+  - [ ] `mouse-tracker.ts` - Mouse position, velocity, acceleration
+  - [ ] `touch-tracker.ts` - Touch input, scroll velocity
+  - [ ] `scroll-tracker.ts` - Scroll position, direction, dwell time
+  - [ ] `interaction-tracker.ts` - Clicks, hovers, focus events
+  - [ ] `event-buffer.ts` - Batch dispatch to backend
+- [ ] `frontend/src/schema/` - Schema-driven rendering system
+  - [ ] `types.ts` - Layout schema TypeScript interfaces
+  - [ ] `registry.ts` - Component registry by module type + genre
+  - [ ] `renderer.tsx` - Dynamic component hydration from JSON
+- [ ] `frontend/src/realtime/` - Real-time layout updates
+  - [ ] `websocket-client.ts` - WebSocket with auto-reconnect
+  - [ ] `sse-client.ts` - SSE fallback
+  - [ ] `layout-subscriber.ts` - Abstraction with fallback logic
+
+#### Priority 2: Frontend State Management
+- [ ] `frontend/src/hooks/` - React hooks
+  - [ ] `useLayout.ts` - Layout state + real-time subscription
+  - [ ] `useTracking.ts` - Access tracking context
+  - [ ] `useSession.ts` - Session ID + device detection
+- [ ] `frontend/src/context/` - React contexts
+  - [ ] `LayoutContext.tsx` - Global layout state
+  - [ ] `TrackingContext.tsx` - Telemetry tracker instances
+  - [ ] `SessionContext.tsx` - Session provider
+- [ ] `frontend/src/design-system/` - Design tokens
+  - [ ] `tokens.css` - CSS custom properties
+  - [ ] `colors.ts`, `typography.ts`, `spacing.ts` - Token exports
+
+#### Priority 3: Backend APIs
+- [ ] `backend/app/api/` - FastAPI routes
+  - [ ] `router.py` - Main API router
+  - [ ] `layout.py` - GET /layout, POST /layout/refresh
+  - [ ] `events.py` - POST /events (telemetry ingestion)
+  - [ ] `session.py` - POST /session, GET/DELETE /session/{id}
+  - [ ] `products.py` - Shopify product proxy
+- [ ] `backend/app/main.py` - FastAPI app entry point
+- [ ] `backend/app/config.py` - pydantic-settings configuration
+
+#### Priority 4: UI Modules
+- [ ] `frontend/src/modules/` - Create actual UI components
+  - [ ] `base/` - Neutral default modules (hero, product-grid, cta)
+  - [ ] `minimalist/` - Clean, typography-focused
+  - [ ] `neobrutalist/` - Bold, raw aesthetic
+  - [ ] `glassmorphism/` - Blurred glass effects
+  - [ ] `loud/` - High-contrast A/B testing modules
+
+#### Priority 5: Testing & Validation
+- [ ] Unit tests for motor analyzer + state classifier
+- [ ] Integration tests for LangGraph workflow
+- [ ] E2E tests for layout generation pipeline
+- [ ] Load testing for WebSocket connections
+
+---
+
+### Architecture Notes
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND (React)                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Tracking Layer          Schema Renderer         Realtime       │
+│  ┌─────────────┐        ┌──────────────┐      ┌─────────────┐   │
+│  │ Mouse/Touch │───────▶│ JSON Layout  │◀─────│ WebSocket   │   │
+│  │ Scroll/Int  │        │ → Components │      │ / SSE       │   │
+│  └─────────────┘        └──────────────┘      └─────────────┘   │
+└────────────┬─────────────────────────────────────────▲──────────┘
+             │ Events                                  │ Layout
+             ▼                                         │
+┌─────────────────────────────────────────────────────────────────┐
+│                        BACKEND (FastAPI)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  Event API ──▶ Kafka ──▶ Agent Worker ──▶ Layout API            │
+│                              │                                  │
+│                   ┌──────────▼───────────┐                      │
+│                   │   LangGraph (7 nodes)│                      │
+│                   │   motor → context →  │                      │
+│                   │   variance → reduce  │                      │
+│                   │   → stability/explore│                      │
+│                   │   → synthesize       │                      │
+│                   └─────────────────────-┘                      │
+│                              │                                  │
+│              ┌───────────────┼───────────────┐                  │
+│              ▼               ▼               ▼                  │
+│          Redis           MongoDB        Vector DB               │
+│        (session)        (cold store)   (pref drift)             │
+└─────────────────────────────────────────────────────────────────┘
+```
