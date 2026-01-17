@@ -1,68 +1,824 @@
+/**
+ * Gen UI - Global Styles
+ * 
+ * This file contains:
+ * 1. Global reset and base styles
+ * 2. CSS Variables for the 6 genres
+ * 3. Module card base styles
+ * 4. Module type specific styles
+ * 5. Genre-specific overrides
+ * 6. Animations and transitions
+ */
+
+/* ============================================
+   IMPORTS & RESET
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Global Base */
+  --app-bg: #0a0a0b;
+  --app-text: #ffffff;
+  --grid-gap: 1.5rem;
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+html {
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   min-height: 100vh;
+  line-height: 1.5;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+img {
+  max-width: 100%;
+  display: block;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* ============================================
+   GENRE CSS VARIABLES
+   ============================================ */
+
+/* GENRE 0: BASE - Clean, professional dark UI */
+.genre-base {
+  --g-bg: #18181b;
+  --g-bg-secondary: #27272a;
+  --g-text: #fafafa;
+  --g-text-muted: #a1a1aa;
+  --g-accent: #3b82f6;
+  --g-accent-hover: #60a5fa;
+  --g-border: 1px solid #27272a;
+  --g-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --g-radius: 12px;
+  --g-font: 'Inter', sans-serif;
+  --g-font-display: 'Inter', sans-serif;
+  --g-transform: none;
+  --g-letter-spacing: -0.01em;
+}
+
+/* GENRE 1: MINIMALIST - Stark, high contrast, Swiss-inspired */
+.genre-minimalist {
+  --g-bg: #000000;
+  --g-bg-secondary: #0a0a0a;
+  --g-text: #ffffff;
+  --g-text-muted: #737373;
+  --g-accent: #ffffff;
+  --g-accent-hover: #e5e5e5;
+  --g-border: 1px solid #262626;
+  --g-shadow: none;
+  --g-radius: 0px;
+  --g-font: 'Inter', 'Helvetica Neue', sans-serif;
+  --g-font-display: 'Inter', sans-serif;
+  --g-transform: none;
+  --g-letter-spacing: -0.02em;
+}
+
+/* GENRE 2: NEOBRUTALIST - Bold, raw, playful chaos */
+.genre-neobrutalist {
+  --g-bg: #facc15;
+  --g-bg-secondary: #fef08a;
+  --g-text: #000000;
+  --g-text-muted: #1c1917;
+  --g-accent: #000000;
+  --g-accent-hover: #292524;
+  --g-border: 4px solid #000000;
+  --g-shadow: 8px 8px 0px 0px #000000;
+  --g-radius: 0px;
+  --g-font: 'Inter', monospace;
+  --g-font-display: 'Inter', sans-serif;
+  --g-transform: uppercase;
+  --g-letter-spacing: 0.05em;
+}
+
+/* GENRE 3: GLASSMORPHISM - Ethereal, translucent, dreamy */
+.genre-glassmorphism {
+  --g-bg: rgba(255, 255, 255, 0.05);
+  --g-bg-secondary: rgba(255, 255, 255, 0.08);
+  --g-text: #ffffff;
+  --g-text-muted: rgba(255, 255, 255, 0.6);
+  --g-accent: #a78bfa;
+  --g-accent-hover: #c4b5fd;
+  --g-border: 1px solid rgba(255, 255, 255, 0.12);
+  --g-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --g-radius: 20px;
+  --g-font: 'Inter', sans-serif;
+  --g-font-display: 'Inter', sans-serif;
+  --g-transform: none;
+  --g-letter-spacing: 0;
+  --g-blur: blur(16px);
+}
+
+/* GENRE 4: LOUD - Attention-grabbing, gradient, energetic */
+.genre-loud {
+  --g-bg: linear-gradient(135deg, #f97316 0%, #dc2626 50%, #be123c 100%);
+  --g-bg-secondary: rgba(0, 0, 0, 0.2);
+  --g-text: #ffffff;
+  --g-text-muted: rgba(255, 255, 255, 0.85);
+  --g-accent: #ffffff;
+  --g-accent-hover: #fef3c7;
+  --g-border: none;
+  --g-shadow: 0 20px 40px -10px rgba(220, 38, 38, 0.4);
+  --g-radius: 24px;
+  --g-font: 'Inter', sans-serif;
+  --g-font-display: 'Inter', sans-serif;
+  --g-transform: none;
+  --g-letter-spacing: 0;
+}
+
+/* GENRE 5: CYBER - Matrix, terminal, hacker aesthetic */
+.genre-cyber {
+  --g-bg: #020617;
+  --g-bg-secondary: #0f172a;
+  --g-text: #4ade80;
+  --g-text-muted: #22c55e;
+  --g-accent: #22c55e;
+  --g-accent-hover: #86efac;
+  --g-border: 1px dashed #22c55e;
+  --g-shadow: 0 0 20px rgba(34, 197, 94, 0.15), inset 0 0 60px rgba(34, 197, 94, 0.03);
+  --g-radius: 4px;
+  --g-font: 'JetBrains Mono', 'Courier New', monospace;
+  --g-font-display: 'JetBrains Mono', monospace;
+  --g-transform: none;
+  --g-letter-spacing: 0;
+}
+
+/* ============================================
+   APP LAYOUT
+   ============================================ */
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.app-header p {
+  color: #71717a;
+  font-size: 0.875rem;
+}
+
+.app-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.app-controls button {
+  padding: 0.75rem 1.5rem;
+  background: #27272a;
+  color: #fff;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.app-controls button:hover {
+  background: #3f3f46;
+  border-color: #52525b;
+}
+
+/* ============================================
+   RENDERING ENGINE & GRID
+   ============================================ */
+
+.rendering-engine {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--grid-gap);
+  align-items: stretch;
+}
+
+.module-wrapper {
+  display: flex;
+  min-height: 0;
+}
+
+/* ============================================
+   MODULE CARD BASE
+   ============================================ */
+
+.module-card {
+  /* Apply genre variables */
+  background: var(--g-bg);
+  color: var(--g-text);
+  border: var(--g-border);
+  border-radius: var(--g-radius);
+  box-shadow: var(--g-shadow);
+  font-family: var(--g-font);
+  
+  /* Structure */
+  width: 100%;
+  min-height: 380px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  
+  /* Transitions */
+  transition: transform var(--transition-medium), box-shadow var(--transition-medium);
+}
+
+.module-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Glassmorphism blur effect */
+.genre-glassmorphism.module-card {
+  backdrop-filter: var(--g-blur);
+  -webkit-backdrop-filter: var(--g-blur);
+}
+
+/* ============================================
+   MODULE BADGE
+   ============================================ */
+
+.module-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 10;
+}
+
+.genre-base .module-badge { background: var(--g-accent); color: #fff; }
+.genre-minimalist .module-badge { background: #fff; color: #000; }
+.genre-neobrutalist .module-badge { background: #000; color: #facc15; }
+.genre-glassmorphism .module-badge { background: rgba(167, 139, 250, 0.3); color: #fff; backdrop-filter: blur(8px); }
+.genre-loud .module-badge { background: #fff; color: #dc2626; }
+.genre-cyber .module-badge { background: #22c55e; color: #000; }
+
+/* ============================================
+   MODULE BUTTON
+   ============================================ */
+
+.module-btn {
+  margin-top: auto;
+  padding: 1rem 1.5rem;
+  background: var(--g-accent);
+  color: var(--g-bg);
+  border: none;
+  border-radius: max(calc(var(--g-radius) - 8px), 4px);
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: var(--g-letter-spacing);
+  text-transform: var(--g-transform);
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.module-btn:hover {
+  background: var(--g-accent-hover);
+  transform: translateY(-2px);
+}
+
+/* Button overrides for specific genres */
+.genre-neobrutalist .module-btn {
+  background: #000;
+  color: #facc15;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 0 #000;
+}
+
+.genre-neobrutalist .module-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 0 #000;
+}
+
+.genre-loud .module-btn {
+  background: #fff;
+  color: #dc2626;
+}
+
+.genre-cyber .module-btn {
+  background: transparent;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+}
+
+.genre-cyber .module-btn:hover {
+  background: #22c55e;
+  color: #000;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+.genre-glassmorphism .module-btn {
+  background: rgba(167, 139, 250, 0.3);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   PRODUCT CARD MODULE
+   ============================================ */
+
+.module-product-card .product-image-container {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: calc(var(--g-radius) - 4px);
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: var(--g-bg-secondary);
+}
+
+.module-product-card .product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-medium);
+}
+
+.module-product-card:hover .product-image {
+  transform: scale(1.05);
+}
+
+.module-product-card .product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.module-product-card .product-vendor {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--g-text-muted);
+}
+
+.module-product-card .product-title {
+  font-family: var(--g-font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-transform: var(--g-transform);
+  letter-spacing: var(--g-letter-spacing);
+}
+
+.module-product-card .product-description {
+  font-size: 0.875rem;
+  color: var(--g-text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.module-product-card .product-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.module-product-card .price-currency {
+  font-size: 0.875rem;
+  margin-right: 0.25rem;
+}
+
+/* Neobrutalist product card special */
+.genre-neobrutalist .product-image-container {
+  border: 3px solid #000;
+}
+
+/* ============================================
+   HERO MODULE
+   ============================================ */
+
+.module-hero {
+  justify-content: center;
+  text-align: center;
+  min-height: 400px;
+}
+
+.module-hero .hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 1;
+}
+
+.module-hero .hero-headline {
+  font-family: var(--g-font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: var(--g-transform);
+  letter-spacing: var(--g-letter-spacing);
+}
+
+.module-hero .hero-subtext {
+  font-size: 1rem;
+  color: var(--g-text-muted);
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+.module-hero .hero-cta {
+  margin-top: 1rem;
+  width: auto;
+  padding: 1rem 2rem;
+}
+
+/* Glass orbs for glassmorphism hero */
+.module-hero .hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.module-hero .hero-orb-1 {
+  width: 200px;
+  height: 200px;
+  background: #a78bfa;
+  top: -50px;
+  left: -50px;
+}
+
+.module-hero .hero-orb-2 {
+  width: 150px;
+  height: 150px;
+  background: #f472b6;
+  bottom: -30px;
+  right: -30px;
+}
+
+/* Cyber hero scanlines */
+.genre-cyber.module-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 197, 94, 0.03) 2px,
+    rgba(34, 197, 94, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* ============================================
+   BANNER MODULE
+   ============================================ */
+
+.module-banner {
+  min-height: auto;
+  padding: 1.25rem 1.5rem;
+  justify-content: center;
+}
+
+.module-banner .banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.module-banner .banner-icon {
+  font-size: 1.5rem;
+}
+
+.module-banner .banner-text {
+  font-size: 0.9375rem;
+  text-transform: var(--g-transform);
+  letter-spacing: var(--g-letter-spacing);
+}
+
+.module-banner .banner-highlight {
+  color: var(--g-accent);
+  font-weight: 700;
+}
+
+.genre-loud .banner-highlight {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* ============================================
+   FEATURE LIST MODULE
+   ============================================ */
+
+.module-feature-list .feature-list-title {
+  font-family: var(--g-font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-transform: var(--g-transform);
+  letter-spacing: var(--g-letter-spacing);
+}
+
+.module-feature-list .feature-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  flex: 1;
+}
+
+.module-feature-list .feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.module-feature-list .feature-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.module-feature-list .feature-content {
+  flex: 1;
+}
+
+.module-feature-list .feature-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  text-transform: var(--g-transform);
+}
+
+.module-feature-list .feature-description {
+  font-size: 0.8125rem;
+  color: var(--g-text-muted);
+  line-height: 1.5;
+}
+
+/* ============================================
+   TESTIMONIAL MODULE
+   ============================================ */
+
+.module-testimonial {
+  justify-content: center;
+}
+
+.module-testimonial .testimonial-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.module-testimonial .testimonial-quote-mark {
+  font-size: 2rem;
+  opacity: 0.3;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+
+.genre-neobrutalist .testimonial-quote-mark {
+  opacity: 1;
+  font-size: 1rem;
+  color: #000;
+}
+
+.genre-cyber .testimonial-quote-mark {
+  font-family: var(--g-font);
+  color: var(--g-accent);
+  opacity: 0.7;
+}
+
+.module-testimonial .testimonial-quote {
+  font-size: 1.125rem;
+  font-style: italic;
+  line-height: 1.6;
+  flex: 1;
+}
+
+.genre-neobrutalist .testimonial-quote {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.module-testimonial .testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.module-testimonial .testimonial-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.genre-neobrutalist .testimonial-avatar {
+  border-radius: 0;
+  border: 2px solid #000;
+}
+
+.module-testimonial .testimonial-author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.module-testimonial .testimonial-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.module-testimonial .testimonial-role {
+  font-size: 0.8125rem;
+  color: var(--g-text-muted);
+}
+
+/* ============================================
+   CTA MODULE
+   ============================================ */
+
+.module-cta {
+  justify-content: center;
+  text-align: center;
+}
+
+.module-cta .cta-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.module-cta .cta-headline {
+  font-family: var(--g-font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: var(--g-transform);
+  letter-spacing: var(--g-letter-spacing);
+}
+
+.module-cta .cta-subtext {
+  font-size: 0.9375rem;
+  color: var(--g-text-muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.module-cta .cta-button {
+  margin-top: 0.5rem;
+  width: auto;
+  padding: 1rem 2rem;
+}
+
+/* ============================================
+   VARIATION MODIFIERS
+   ============================================ */
+
+.variation-0 {
+  /* Default - no changes */
+}
+
+.variation-1 {
+  /* Compact */
+  min-height: 320px;
+  padding: 1.25rem;
+}
+
+.variation-1 .product-title,
+.variation-1 .hero-headline,
+.variation-1 .cta-headline {
+  font-size: 90%;
+}
+
+.variation-2 {
+  /* Expanded */
+  min-height: 450px;
+  padding: 2rem;
+}
+
+.variation-2 .product-title,
+.variation-2 .hero-headline,
+.variation-2 .cta-headline {
+  font-size: 110%;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  a:hover {
-    color: #747bff;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes cyberGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+  }
+}
+
+.module-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.genre-cyber.module-card {
+  animation: fadeIn 0.5s ease-out, cyberGlow 3s ease-in-out infinite;
+}
+
+.genre-loud .module-badge {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .module-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .rendering-engine {
+    padding: 1rem;
+  }
+  
+  .module-hero .hero-headline {
+    font-size: 1.5rem;
   }
 }
