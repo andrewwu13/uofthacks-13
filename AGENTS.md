@@ -103,8 +103,8 @@ One issue i can foresee is performance. It seems like with multiple agents all r
   - [ ] `websocket-client.ts` - WebSocket with auto-reconnect
   - [ ] `sse-client.ts` - SSE fallback
   - [ ] `layout-subscriber.ts` - Abstraction with fallback logic
-=======
-```mermaid
+
+
 flowchart TD
     subgraph Telemetry
         A[Mouse Tracker] --> D[Event Buffer]
@@ -140,8 +140,6 @@ flowchart TD
     end
     
     OUT -->|SSE/WebSocket| FE[Frontend]
-```
->>>>>>> 818c8e740b683a1fc913527116df4bbcc522c7c7
 
 ### Stream 1: Motor State (High Frequency, $0 Cost)
 - Runs near-constantly using pure Python algorithms
