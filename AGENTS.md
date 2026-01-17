@@ -118,10 +118,10 @@ we are using shopigy GraphQL Admin API, with shopigy CLI
   - [ ] `scroll-tracker.ts` - Scroll position, direction, dwell time
   - [ ] `interaction-tracker.ts` - Clicks, hovers, focus events
   - [ ] `event-buffer.ts` - Batch dispatch to backend
-- [x] `frontend/src/schema/` - Schema-driven rendering system ✅
-  - [x] `types.ts` - Layout schema TypeScript interfaces
-  - [x] `registry.ts` - Component registry by module type + genre
-  - [x] `renderer.tsx` - Dynamic component hydration from JSON
+- [ ] `frontend/src/schema/` - Schema-driven rendering system
+  - [ ] `types.ts` - Layout schema TypeScript interfaces
+  - [ ] `registry.ts` - Component registry by module type + genre
+  - [ ] `renderer.tsx` - Dynamic component hydration from JSON
 - [ ] `frontend/src/realtime/` - Real-time layout updates
   - [ ] `websocket-client.ts` - WebSocket with auto-reconnect
   - [ ] `sse-client.ts` - SSE fallback
@@ -136,9 +136,9 @@ we are using shopigy GraphQL Admin API, with shopigy CLI
   - [ ] `LayoutContext.tsx` - Global layout state
   - [ ] `TrackingContext.tsx` - Telemetry tracker instances
   - [ ] `SessionContext.tsx` - Session provider
-- [x] `frontend/src/design-system/` - Design tokens ✅
-  - [x] `tokens.css` - CSS custom properties
-  - [x] `colors.ts`, `typography.ts`, `spacing.ts` - Token exports
+- [ ] `frontend/src/design-system/` - Design tokens
+  - [ ] `tokens.css` - CSS custom properties
+  - [ ] `colors.ts`, `typography.ts`, `spacing.ts` - Token exports
 
 #### Priority 3: Backend APIs
 - [ ] `backend/app/api/` - FastAPI routes
@@ -151,15 +151,12 @@ we are using shopigy GraphQL Admin API, with shopigy CLI
 - [ ] `backend/app/config.py` - pydantic-settings configuration
 
 #### Priority 4: UI Modules
-- [x] `frontend/src/modules/base/` - Neutral default modules ✅
-  - [x] `Hero.tsx` - Full-width hero section
-  - [x] `ProductGrid.tsx` - Responsive product grid
-  - [x] `ProductCard.tsx` - Individual product cards
-  - [x] `CTA.tsx` - Call-to-action section
-- [ ] `frontend/src/modules/minimalist/` - Clean, typography-focused
-- [ ] `frontend/src/modules/neobrutalist/` - Bold, raw aesthetic
-- [ ] `frontend/src/modules/glassmorphism/` - Blurred glass effects
-- [ ] `frontend/src/modules/loud/` - High-contrast A/B testing modules
+- [ ] `frontend/src/modules/` - Create actual UI components
+  - [ ] `base/` - Neutral default modules (hero, product-grid, cta)
+  - [ ] `minimalist/` - Clean, typography-focused
+  - [ ] `neobrutalist/` - Bold, raw aesthetic
+  - [ ] `glassmorphism/` - Blurred glass effects
+  - [ ] `loud/` - High-contrast A/B testing modules
 
 #### Priority 5: Testing & Validation
 - [ ] Unit tests for motor analyzer + state classifier
