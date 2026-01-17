@@ -33,13 +33,13 @@ class SSEPublisher:
             if not self.subscribers[session_id]:
                 del self.subscribers[session_id]
     
-    async def publish_layout(self, session_id: str, layout: dict):
-        """Publish layout update to all subscribers"""
+    async def publish_layout_update(self, session_id: str, layout_update: dict):
+        """Publish layout update to subscribers of a specific session only."""
         if session_id in self.subscribers:
             for queue in self.subscribers[session_id]:
                 await queue.put({
-                    "event": "layout_update",
-                    "payload": layout,
+                    "event": "layout:update",
+                    "payload": layout_update,
                 })
 
 
