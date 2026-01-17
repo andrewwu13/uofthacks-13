@@ -1,35 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+/**
+ * Gen UI - AI-Powered Self-Evolving Storefront
+ * Main Application Entry Point
+ */
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+    <div style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      flexDirection: 'column',
+      gap: '1rem',
+      fontFamily: 'system-ui, sans-serif'
+    }}>
+      <h1>🚀 Gen UI Storefront</h1>
+      <p style={{ color: '#a3a3a3' }}>
+        AI-powered self-evolving storefront
       </p>
-    </>
-  )
+      <p style={{ color: '#737373', fontSize: '0.875rem' }}>
+        Visit <a href="/tracking-test.html" style={{ color: '#6366f1' }}>/tracking-test.html</a> to test the telemetry tracking system
+      </p>
+    </div>
+  );
 }
 
-export default App
+export default App;
