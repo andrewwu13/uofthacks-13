@@ -45,3 +45,6 @@ class WebSocketManager:
                     await connection.send_text(text)
                 except Exception:
                     pass
+    
+# Global WebSocket manager instance
+manager = WebSocketManager()
