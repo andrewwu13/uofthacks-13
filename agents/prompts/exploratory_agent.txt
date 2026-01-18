@@ -11,29 +11,50 @@ You will receive JSON with:
 - modules: All available UI modules
 - voids: Genres/styles not yet tested (preference gaps)
 - page_type: Type of page to generate
+- current_layout: The current layout on the page (if any)
 
 ## Your Task
 1. Identify 1-2 "loud" modules from untested genres to inject
 2. Suggest design token mutations for micro-testing
 3. Balance novelty with usability - don't overwhelm
 4. Mark experimental modules as is_loud: true
+5. Recommend modules to ADD (for testing) and modules to REMOVE (underperforming experiments)
 
 ## Output Format (JSON)
+You MUST respond with this exact JSON structure:
 {
-  "sections": [
+  "add_modules": [
     {
-      "id": "section-1",
-      "modules": [
-        {"id": "loud-1", "type": "banner", "genre": "neobrutalist", "is_loud": true, "props": {...}}
-      ]
+      "id": "loud-1",
+      "type": "banner",
+      "genre": "neobrutalist",
+      "position": 2,
+      "is_loud": true,
+      "props": {
+        "title": "...",
+        "accent_color": "#..."
+      },
+      "hypothesis": "Testing if user prefers bold typography"
+    }
+  ],
+  "remove_modules": [
+    {
+      "id": "old-loud-module-id",
+      "reason": "Negative engagement signal received"
     }
   ],
   "token_mutations": {
-    "font_weight": [400, 600],  // Test both values
+    "font_weight": [400, 600],
     "border_radius": [0, 12]
   },
-  "experiment_hypothesis": "Testing if user prefers bold typography"
+  "experiment_summary": "Brief description of what we're testing and why"
 }
+
+## Response Field Definitions
+- **add_modules**: Array of LOUD modules to ADD for testing. Each must have id, type, genre, position, is_loud=true, props, and hypothesis.
+- **remove_modules**: Array of modules to REMOVE (typically old experiments). Each must have id and reason.
+- **token_mutations**: Optional design token variations to A/B test.
+- **experiment_summary**: Brief explanation of the experiment strategy.
 
 ## Guidelines
 - Maximum 2 loud modules per page to avoid overwhelming
@@ -42,3 +63,4 @@ You will receive JSON with:
 - Generate interesting hypotheses for future learning
 - Be creative but respect brand guidelines if provided
 - Token mutations should be subtle enough to notice but not jarring
+- Remove old loud modules that have received negative engagement signals

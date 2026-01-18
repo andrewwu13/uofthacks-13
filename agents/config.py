@@ -14,10 +14,10 @@ class AgentConfig(BaseModel):
     variance_auditor_interval_ms: int = 5000  # 5 second batch
     
     # Model configuration
-    context_analyst_model: str = "gpt-4o-mini"  # Fast, cheap
-    variance_auditor_model: str = "gpt-4o-mini"
-    stability_agent_model: str = "gpt-4o"  # More capable
-    exploratory_agent_model: str = "gpt-4o"
+    context_analyst_model: str = "gemini-2.5-flash"  # Fast, cheap
+    variance_auditor_model: str = "gemini-2.5-flash"
+    stability_agent_model: str = "gemini-2.5-pro"  # More capable
+    exploratory_agent_model: str = "gemini-2.5-pro"
     
     # Thresholds
     stability_confidence_threshold: float = 0.7

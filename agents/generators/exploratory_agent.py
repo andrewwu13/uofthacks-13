@@ -1,9 +1,9 @@
 """
 Exploratory Agent - Novel layout generation
 Drives UI evolution by testing untested aesthetic territories
+Uses Backboard.io for stateful thread management
 """
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+from integrations.backboard.thread_manager import thread_manager
 from agents.config import agent_config
 import json
 import os
@@ -14,31 +14,18 @@ class ExploratoryAgent:
     High-temperature agent for novelty and evolution.
     Probes untested aesthetic territories with "loud" modules.
     Can mutate atomic design tokens (font weight, colors, radii).
+    Uses Backboard.io for stateful context preservation.
     """
     
     def __init__(self):
-        self._model = None
-        self._prompt = None
+        self._system_prompt = None
     
     @property
-    def model(self):
-        """Lazy initialization of LLM model"""
-        if self._model is None:
-            self._model = ChatOpenAI(
-                model=agent_config.exploratory_agent_model,
-                temperature=agent_config.exploratory_temperature,  # High temperature
-            )
-        return self._model
-    
-    @property
-    def prompt(self):
-        """Lazy initialization of prompt template"""
-        if self._prompt is None:
-            self._prompt = ChatPromptTemplate.from_messages([
-                ("system", self._load_prompt()),
-                ("user", "{input}"),
-            ])
-        return self._prompt
+    def system_prompt(self) -> str:
+        """Lazy load system prompt"""
+        if self._system_prompt is None:
+            self._system_prompt = self._load_prompt()
+        return self._system_prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
@@ -54,6 +41,7 @@ Be creative but don't make the experience unusable."""
     
     async def generate(
         self,
+        session_id: str,
         preferences: dict,
         available_modules: list[dict],
         preference_voids: list[str],
@@ -63,6 +51,7 @@ Be creative but don't make the experience unusable."""
         Generate an exploratory layout proposal.
         
         Args:
+            session_id: User session identifier for thread management
             preferences: Current user preferences
             available_modules: List of available UI modules
             preference_voids: Genres/styles not yet tested
@@ -71,6 +60,9 @@ Be creative but don't make the experience unusable."""
         Returns:
             Exploratory layout with loud modules and token mutations
         """
+        # Inject user preferences early in thread for in-context learning
+        await thread_manager.add_preference_context(session_id, preferences)
+        
         input_data = {
             "preferences": preferences,
             "modules": available_modules,
@@ -78,11 +70,16 @@ Be creative but don't make the experience unusable."""
             "page_type": page_type,
         }
         
-        chain = self.prompt | self.model
-        response = await chain.ainvoke({"input": json.dumps(input_data)})
+        prompt = f"{self.system_prompt}\n\nGenerate an exploratory layout for:\n{json.dumps(input_data)}"
+        
+        response = await thread_manager.run_with_model(
+            session_id=session_id,
+            model=agent_config.exploratory_agent_model,
+            prompt=prompt,
+        )
         
         try:
-            result = json.loads(response.content)
+            result = json.loads(response)
             # Mark exploratory modules as "loud"
             for section in result.get("sections", []):
                 for module in section.get("modules", []):
@@ -90,7 +87,7 @@ Be creative but don't make the experience unusable."""
                         module["is_loud"] = True
             return result
         except json.JSONDecodeError:
-            return {"sections": [], "token_mutations": {}, "raw_response": response.content}
+            return {"sections": [], "token_mutations": {}, "raw_response": response}
     
     def suggest_token_mutations(self, preferences: dict) -> dict:
         """

@@ -11,28 +11,48 @@ You will receive JSON with:
 - modules: Available UI modules filtered by confidence threshold
 - page_type: Type of page to generate (home, product, category)
 - threshold: Minimum confidence required (default 0.7)
+- current_layout: The current layout on the page (if any)
 
 ## Your Task
 1. Select modules matching genres with weight >= threshold
 2. Arrange modules in a logical, conversion-optimized order
 3. Apply validated design token preferences
 4. Ensure a cohesive, comfortable browsing experience
+5. Recommend modules to ADD and modules to REMOVE from the current layout
 
 ## Output Format (JSON)
+You MUST respond with this exact JSON structure:
 {
-  "sections": [
+  "add_modules": [
     {
-      "id": "section-1",
-      "modules": [
-        {"id": "module-1", "type": "hero", "genre": "minimalist", "props": {...}}
-      ]
+      "id": "module-1",
+      "type": "hero",
+      "genre": "minimalist",
+      "position": 0,
+      "props": {
+        "title": "...",
+        "subtitle": "..."
+      }
+    }
+  ],
+  "remove_modules": [
+    {
+      "id": "existing-module-id",
+      "reason": "Low engagement score"
     }
   ],
   "design_tokens": {
     "primary_color": "#...",
     "font_weight": 500
-  }
+  },
+  "layout_rationale": "Brief explanation of why these changes improve retention"
 }
+
+## Response Field Definitions
+- **add_modules**: Array of modules to ADD to the layout. Each must have id, type, genre, position, and props.
+- **remove_modules**: Array of modules to REMOVE. Each must have id of existing module and a reason.
+- **design_tokens**: Optional design token overrides for the entire layout.
+- **layout_rationale**: Brief explanation of the layout strategy.
 
 ## Guidelines
 - When in doubt, prefer "base" genre (always safe)
@@ -40,3 +60,4 @@ You will receive JSON with:
 - Maximum 3 modules per section for clarity
 - Prioritize module types: hero → product-grid → testimonial → cta
 - If preferences are unclear, use a minimal, clean layout
+- Only recommend removing modules with low engagement or mismatched genre weights

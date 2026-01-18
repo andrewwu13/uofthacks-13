@@ -1,9 +1,9 @@
 """
 Stream 3: Variance Auditor - analyzes "loud" module responses for A/B testing
 Runs on 5-second batch interval, only active when loud modules are in viewport
+Uses Backboard.io for stateful thread management
 """
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+from integrations.backboard.thread_manager import thread_manager
 from agents.config import agent_config
 import json
 import os
@@ -13,31 +13,18 @@ class VarianceAuditorStream:
     """
     Focuses on "loud" modules injected for hypothesis testing.
     Validates prediction model by analyzing engagement delta.
+    Uses Backboard.io for stateful context preservation.
     """
     
     def __init__(self):
-        self._model = None
-        self._prompt = None
+        self._system_prompt = None
     
     @property
-    def model(self):
-        """Lazy initialization of LLM model"""
-        if self._model is None:
-            self._model = ChatOpenAI(
-                model=agent_config.variance_auditor_model,
-                temperature=0.2,
-            )
-        return self._model
-    
-    @property
-    def prompt(self):
-        """Lazy initialization of prompt template"""
-        if self._prompt is None:
-            self._prompt = ChatPromptTemplate.from_messages([
-                ("system", self._load_prompt()),
-                ("user", "{input}"),
-            ])
-        return self._prompt
+    def system_prompt(self) -> str:
+        """Lazy load system prompt"""
+        if self._system_prompt is None:
+            self._system_prompt = self._load_prompt()
+        return self._system_prompt
     
     def _load_prompt(self) -> str:
         """Load system prompt from file"""
@@ -50,6 +37,7 @@ class VarianceAuditorStream:
     
     async def process(
         self,
+        session_id: str,
         loud_module_events: list[dict],
         baseline_engagement: dict,
     ) -> dict:
@@ -57,6 +45,7 @@ class VarianceAuditorStream:
         Audit loud module engagement.
         
         Args:
+            session_id: User session identifier for thread management
             loud_module_events: Interactions with loud modules
             baseline_engagement: Baseline engagement metrics
             
@@ -71,11 +60,16 @@ class VarianceAuditorStream:
             "baseline": baseline_engagement,
         }
         
-        chain = self.prompt | self.model
-        response = await chain.ainvoke({"input": json.dumps(input_data)})
+        prompt = f"{self.system_prompt}\n\nAnalyze the following data:\n{json.dumps(input_data)}"
+        
+        response = await thread_manager.run_with_model(
+            session_id=session_id,
+            model=agent_config.variance_auditor_model,
+            prompt=prompt,
+        )
         
         try:
-            result = json.loads(response.content)
+            result = json.loads(response)
             # Add reward signals based on engagement
             for event in loud_module_events:
                 if event.get("dwell_time_ms", 0) > 2000:
@@ -92,7 +86,7 @@ class VarianceAuditorStream:
                     })
             return result
         except json.JSONDecodeError:
-            return {"active": True, "signals": [], "analysis": response.content}
+            return {"active": True, "signals": [], "analysis": response}
 
 
 variance_auditor_stream = VarianceAuditorStream()
