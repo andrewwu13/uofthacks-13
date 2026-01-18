@@ -31,31 +31,36 @@ export class InteractionTracker {
   start(): void {
     if (this.isTracking) return;
     this.isTracking = true;
-    
+
     document.addEventListener('click', this.handleClick, { capture: true });
     document.addEventListener('mouseenter', this.handleMouseEnter, { capture: true });
     document.addEventListener('mouseleave', this.handleMouseLeave, { capture: true });
     document.addEventListener('focusin', this.handleFocus, { capture: true });
     document.addEventListener('focusout', this.handleBlur, { capture: true });
-    
+
     console.log('[InteractionTracker] Started tracking');
   }
 
   stop(): void {
     if (!this.isTracking) return;
     this.isTracking = false;
-    
+
     document.removeEventListener('click', this.handleClick, { capture: true });
     document.removeEventListener('mouseenter', this.handleMouseEnter, { capture: true });
     document.removeEventListener('mouseleave', this.handleMouseLeave, { capture: true });
     document.removeEventListener('focusin', this.handleFocus, { capture: true });
     document.removeEventListener('focusout', this.handleBlur, { capture: true });
-    
+
     console.log('[InteractionTracker] Stopped tracking');
   }
 
   private findTrackableParent(element: Element | null): Element | null {
     while (element) {
+      // Guard: Make sure element is actually an Element with hasAttribute
+      if (!element || typeof element.hasAttribute !== 'function') {
+        return null;
+      }
+
       if (
         element.hasAttribute('data-module-id') ||
         element.hasAttribute('data-track-id') ||
@@ -93,7 +98,7 @@ export class InteractionTracker {
   private handleClick = (e: MouseEvent): void => {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
-    
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'click',
@@ -106,17 +111,17 @@ export class InteractionTracker {
   private handleMouseEnter = (e: MouseEvent): void => {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
-    
+
     const targetId = this.getTargetId(target);
     const now = Date.now();
-    
+
     // Track hover start
     this.activeHovers.set(targetId, {
       targetId,
       startTime: now,
       element: target,
     });
-    
+
     this.config.onEvent({
       ts: Math.floor(now / 1000),
       type: 'hover-enter',
@@ -129,13 +134,13 @@ export class InteractionTracker {
   private handleMouseLeave = (e: MouseEvent): void => {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
-    
+
     const targetId = this.getTargetId(target);
     const hoverState = this.activeHovers.get(targetId);
-    
+
     if (hoverState) {
       const duration = Date.now() - hoverState.startTime;
-      
+
       // Only emit if hover was significant
       if (duration >= this.config.hoverThreshold) {
         this.config.onEvent({
@@ -146,10 +151,10 @@ export class InteractionTracker {
           metadata: this.getElementMetadata(target),
         });
       }
-      
+
       this.activeHovers.delete(targetId);
     }
-    
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'hover-leave',
@@ -160,7 +165,7 @@ export class InteractionTracker {
   private handleFocus = (e: FocusEvent): void => {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
-    
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'focus',
@@ -172,7 +177,7 @@ export class InteractionTracker {
   private handleBlur = (e: FocusEvent): void => {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
-    
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'blur',
