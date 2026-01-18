@@ -1,11 +1,31 @@
+import json
+import logging
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from app.models.events import EventBatch, EventResponse
 from app.db.mongo_client import mongo_client
+from app.db.redis_client import redis_client
+from app.pipeline.redis_keys import RedisKeys
 from app.sse.publisher import sse_publisher
 from app.pipeline import reducer_pipeline
 from app.models.reducer import ReducerOutput, ReducerContext, ReducerPayload
-import logging
-import json
+
+# Import Agent Graph
+import sys
+import os
+# Ensure root directory is in path for agents import
+# This is a fallback in case PYTHONPATH isn't set perfectly
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.abspath(os.path.join(current_dir, "../../../"))
+if root_dir not in sys.path:
+    sys.path.append(root_dir)
+
+try:
+    from agents.graph import run_layout_generation
+except ImportError:
+    # Handle case where agents module is not found
+    logging.getLogger(__name__).warning("Could not import agents.graph. Inference will be disabled.")
+    run_layout_generation = None
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -46,9 +66,67 @@ async def process_telemetry_batch(batch: EventBatch):
         # ========================================
         # Step 2: Run Reducer Pipeline
         # ========================================
-        # Create reducer payload from telemetry batch
-        # In production, this would be computed from actual telemetry patterns
-        reducer_output = ReducerOutput()  # Default preferences for now
+        
+        # 1. Fetch current preferences from Redis
+        current_preferences = {}
+        try:
+            cached_state = await redis_client.get(RedisKeys.state(batch.session_id))
+            if cached_state:
+                current_preferences = json.loads(cached_state)
+        except Exception as e:
+            logger.warning(f"Failed to fetch cached state: {e}")
+
+        # 2. Run Agent Graph (Inference)
+        reducer_output = None
+        
+        if run_layout_generation:
+            try:
+                # Prepare arguments for agent graph
+                # Extract motor data if present
+                motor_data = [] # Agent graph expects list of dicts for telemetry_batch
+                if batch.motor:
+                    motor_data = [batch.motor.model_dump()]
+                
+                # Extract interaction events (all events in batch)
+                interaction_events = [e.model_dump() for e in batch.events]
+                
+                # Filter 'loud' module events as a subset
+                loud_events = [
+                    e for e in interaction_events 
+                    if e.get('metadata', {}).get('is_loud', False) or 
+                    "loud" in (e.get('target_id') or "").lower()
+                ]
+                
+                logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
+                
+                user_profile_dict = await run_layout_generation(
+                    session_id=batch.session_id,
+                    telemetry_batch=motor_data,
+                    interactions=interaction_events,
+                    loud_module_events=loud_events,
+                    current_preferences=current_preferences,
+                )
+                
+                # Map UserProfile to ReducerOutput
+                if user_profile_dict:
+                    # UserProfile has 'visual', 'interaction', 'behavioral' which match ReducerOutput
+                    # ReducerOutput will ignore 'inferred' field if configured to ignore extras,
+                    # or we can construct explicitly to be safe.
+                    reducer_output = ReducerOutput(
+                        visual=user_profile_dict.get('visual', {}),
+                        interaction=user_profile_dict.get('interaction', {}),
+                        behavioral=user_profile_dict.get('behavioral', {}),
+                    )
+                    logger.info(f"Agent Workflow successful. Generated profile: {user_profile_dict.get('inferred', {}).get('summary')}")
+                    
+            except Exception as e:
+                logger.error(f"Agent Workflow failed: {e}")
+                # Fallback to default will happen below if reducer_output is None
+        
+        # Fallback if agent failed or disabled
+        if not reducer_output:
+            logger.warning("Using default ReducerOutput (Agent skipped or failed)")
+            reducer_output = ReducerOutput() 
         
         # Extract device_type for context
         device_type = batch.device_type if batch.device_type in ["desktop", "mobile", "tablet"] else "desktop"
