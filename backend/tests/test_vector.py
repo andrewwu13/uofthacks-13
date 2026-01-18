@@ -115,10 +115,11 @@ class TestModuleVectors:
         assert abs(magnitude - 1.0) < 0.0001
     
     def test_get_module_by_id(self):
-        """Should find module by ID"""
-        module = get_module_by_id("hero_base_v1")
+        """Should find module by ID (integer 0-35)"""
+        # ID 0 = genre:base, layout:standard
+        module = get_module_by_id(0)
         assert module is not None
-        assert module.module_type == "hero"
+        assert module.layout == "standard"
         assert module.genre == "base"
     
     def test_get_module_by_id_not_found(self):
@@ -283,15 +284,15 @@ class TestVectorStore:
         assert len(results) > 0
     
     def test_search_similar_modules(self):
-        """search_similar_modules should return results per type"""
+        """search_similar_modules should return results"""
         initialize_vector_store()
         
         profile_vec = create_zero_vector()
         results = search_similar_modules(profile_vec)
         
-        assert "hero" in results
-        assert "product-grid" in results
-        assert "cta" in results
+        # Results should have 'recommended' key with list of SearchResult
+        assert "recommended" in results
+        assert len(results["recommended"]) > 0
 
 
 class TestVectorStorePerformance:
