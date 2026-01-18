@@ -23,6 +23,11 @@ async def lifespan(app: FastAPI):
     await redis_client.connect()
     print("[Startup] Redis connected")
     
+    # Initialize vector store for module matching
+    print("[Startup] Initializing vector store...")
+    from app.vector import initialize_vector_store
+    initialize_vector_store()
+    
     yield
     
     # Shutdown: Disconnect from databases

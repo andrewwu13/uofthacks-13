@@ -154,65 +154,45 @@ async def process_telemetry_batch(batch: EventBatch):
                     current_preferences=current_preferences,
                 )
                 
-                # Map UserProfile to ReducerOutput
+                # Query vector store for recommended genre
                 if user_profile_dict:
-                    # UserProfile has 'visual', 'interaction', 'behavioral' which match ReducerOutput
-                    # ReducerOutput will ignore 'inferred' field if configured to ignore extras,
-                    # or we can construct explicitly to be safe.
-                    reducer_output = ReducerOutput(
-                        visual=user_profile_dict.get('visual', {}),
-                        interaction=user_profile_dict.get('interaction', {}),
-                        behavioral=user_profile_dict.get('behavioral', {}),
-                    )
-                    logger.info(f"Agent Workflow successful. Generated profile: {user_profile_dict.get('inferred', {}).get('summary')}")
+                    from app.vector import get_recommended_genre
+                    recommended_genre = get_recommended_genre(user_profile_dict)
+                    profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
+                    logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Recommended genre: {recommended_genre}")
+                else:
+                    recommended_genre = "base"
+                    profile_summary = "New User"
                     
             except Exception as e:
                 logger.error(f"Agent Workflow failed: {e}")
-                # Fallback to default will happen below if reducer_output is None
-        
-        # Fallback if agent failed or disabled
-        if not reducer_output:
-            logger.warning("Using default ReducerOutput (Agent skipped or failed)")
-            reducer_output = ReducerOutput() 
-        
-        # Extract device_type for context
-        device_type = batch.device_type if batch.device_type in ["desktop", "mobile", "tablet"] else "desktop"
-        
-        reducer_payload = ReducerPayload(
-            output=reducer_output,
-            context=ReducerContext(
-                session_id=batch.session_id,
-                device_type=device_type
-            )
-        )
-        
-        # Run pipeline to generate layout
-        layout = await reducer_pipeline.process(reducer_payload)
-        
-        logger.info(f"Generated layout {layout.layout_id} for session {batch.session_id}")
+                recommended_genre = "base"
+                profile_summary = "Fallback User"
+        else:
+            # Agent disabled
+            recommended_genre = "base"
+            profile_summary = "Agent Disabled"
 
         # ========================================
-        # Step 3: Publish Layout via SSE
+        # Step 3: Publish Genre Recommendation via SSE
         # ========================================
         await sse_publisher.publish_layout_update(
             session_id=batch.session_id,
             layout_update={
-                "layout_id": layout.layout_id,
-                "layout_hash": layout.layout_hash,
-                "components": [c.model_dump() for c in layout.components],
-                "tokens": layout.tokens.model_dump(),
-                "metadata": layout.metadata
+                "recommended_genre": recommended_genre,
+                "profile_summary": profile_summary,
+                "session_id": batch.session_id,
             }
         )
         
-        logger.info(f"Published layout update via SSE for session {batch.session_id}")
+        logger.info(f"Published genre recommendation via SSE for session {batch.session_id}")
 
         # DEBUG: Log summary
-        print(f"\n=== TELEMETRY → LAYOUT PIPELINE ===")
+        print(f"\n=== TELEMETRY → VECTOR PIPELINE ===")
         print(f"Session: {batch.session_id}")
         print(f"Events: {len(docs)}")
-        print(f"Layout: {layout.layout_id}")
-        print(f"Components: {len(layout.components)}")
+        print(f"Recommended Genre: {recommended_genre}")
+        print(f"Profile: {profile_summary}")
         print(f"===================================\n")
         
     except Exception as e:
