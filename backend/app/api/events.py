@@ -93,7 +93,7 @@ async def process_telemetry_batch(batch: EventBatch):
                 # Filter 'loud' module events as a subset
                 loud_events = [
                     e for e in interaction_events 
-                    if e.get('metadata', {}).get('is_loud', False) or 
+                    if (e.get('metadata') or {}).get('is_loud', False) or 
                     "loud" in (e.get('target_id') or "").lower()
                 ]
                 
