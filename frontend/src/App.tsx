@@ -295,6 +295,7 @@ function App() {
         showDebugInfo={true}
         onLoadMore={handleLoadMore}
         isLoading={isLoadingMore}
+        hasMore={true}
       />
 
       {/* Debug Info */}
