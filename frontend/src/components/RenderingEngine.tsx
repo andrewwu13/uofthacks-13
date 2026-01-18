@@ -1,266 +1,300 @@
 /**
- * Gen UI Rendering Engine
+ * Gen UI Rendering Engine - Product Focused
  * 
- * This engine takes an array of module IDs and builds the storefront page.
- * Each module ID encodes:
- * - Genre (visual style): 0-5
- * - Module Type (component): 0-5
- * - Variation (size/layout): 0-2
+ * This engine displays real Shopify products with different visual genres.
+ * Each module shows a real product scraped from Shopify stores.
  * 
- * The engine:
- * 1. Decodes each module ID
- * 2. Selects the appropriate component
- * 3. Applies the genre styling
- * 4. Renders in a 2x3 grid layout
+ * Genre (visual style): 0-5
+ *   0 = Base (clean dark UI)
+ *   1 = Minimalist (stark, Swiss-inspired)
+ *   2 = Neobrutalist (bold, raw, playful)
+ *   3 = Glassmorphism (translucent, dreamy)
+ *   4 = Loud (gradient, energetic)
+ *   5 = Cyber (matrix, terminal aesthetic)
  */
 
-import React, { useMemo } from 'react';
+import React, { memo, useEffect, useRef, useCallback } from 'react';
 import {
-  decodeModuleId,
-  ModuleType,
   Genre,
-  Variation,
-  encodeModuleId
+  GENRE_NAMES,
 } from '../schema/types';
-import type { ModuleTag } from '../schema/types';
-import {
-  getRandomHero,
-  getRandomBanner,
-  getRandomFeatures,
-  getRandomTestimonial,
-  getRandomCTA,
-  PRODUCTS
-} from '../schema/data';
-
-// Import all modules
-import { ProductCard } from '../modules/ProductCard';
-import { Hero } from '../modules/Hero';
-import { Banner } from '../modules/Banner';
-import { FeatureList } from '../modules/FeatureList';
-import { Testimonial } from '../modules/Testimonial';
-import { CTA } from '../modules/CTA';
+import type { ShopifyProduct } from '../api/products';
 
 // ============================================
 // TYPES
 // ============================================
 
+// Module with real product data
+export interface ProductModule {
+  id: string;          // Unique identifier for this module instance
+  product: ShopifyProduct;  // Real product data from API
+  genre: Genre;        // Visual style (0-5)
+}
+
 interface RenderingEngineProps {
-  moduleIds: number[];
-  onModuleClick?: (moduleId: number, tag: ModuleTag) => void;
+  modules: ProductModule[];
+  onModuleClick?: (product: ShopifyProduct, genre: Genre) => void;
+  showDebugInfo?: boolean;
+  onLoadMore?: () => void;
+  isLoading?: boolean;
 }
 
 // ============================================
-// MODULE RENDERER
+// DEBUG OVERLAY COMPONENT (Memoized)
 // ============================================
 
-/**
- * Renders a single module based on its ID
- */
-const renderModule = (
-  moduleId: number,
-  index: number,
-  onModuleClick?: (moduleId: number, tag: ModuleTag) => void
-): React.ReactNode => {
-  const tag = decodeModuleId(moduleId);
-  const { genre, moduleType, variation } = tag;
-  const key = `module-${moduleId}-${index}`;
+interface DebugOverlayProps {
+  product: ShopifyProduct;
+  genre: Genre;
+}
 
-  // Wrapper for click handling
-  const handleClick = () => {
+const DebugOverlay = memo<DebugOverlayProps>(({ product, genre }) => (
+  <div className="module-debug-overlay">
+    <div className="debug-id">ID: {product.id}</div>
+    <div className="debug-genre">{GENRE_NAMES[genre]}</div>
+    <div className="debug-type">{product.store_domain}</div>
+  </div>
+));
+
+DebugOverlay.displayName = 'DebugOverlay';
+
+// ============================================
+// GENRE CSS CLASSES
+// ============================================
+
+const GENRE_CLASSES: Record<Genre, string> = {
+  [Genre.BASE]: 'genre-base',
+  [Genre.MINIMALIST]: 'genre-minimalist',
+  [Genre.NEOBRUTALIST]: 'genre-neobrutalist',
+  [Genre.GLASSMORPHISM]: 'genre-glassmorphism',
+  [Genre.LOUD]: 'genre-loud',
+  [Genre.CYBER]: 'genre-cyber'
+};
+
+// ============================================
+// PRODUCT CARD COMPONENT (Memoized)
+// ============================================
+
+interface ProductCardProps {
+  module: ProductModule;
+  onModuleClick?: (product: ShopifyProduct, genre: Genre) => void;
+  showDebugInfo: boolean;
+}
+
+const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugInfo }) => {
+  const { product, genre } = module;
+  const genreClass = GENRE_CLASSES[genre];
+
+  const handleClick = useCallback(() => {
     if (onModuleClick) {
-      onModuleClick(moduleId, tag);
+      onModuleClick(product, genre);
+    }
+  }, [product, genre, onModuleClick]);
+
+  // Get button text based on genre
+  const getButtonText = () => {
+    switch (genre) {
+      case Genre.NEOBRUTALIST: return 'BUY NOW';
+      case Genre.LOUD: return 'ADD TO CART 🔥';
+      case Genre.CYBER: return '>> ACQUIRE';
+      case Genre.MINIMALIST: return 'Add';
+      default: return 'Add to Cart';
     }
   };
 
-  // Render the appropriate component with properly typed content
-  switch (moduleType) {
-    case ModuleType.PRODUCT_CARD: {
-      const product = PRODUCTS[index % PRODUCTS.length];
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <ProductCard
-            genre={genre}
-            variation={variation}
-            product={product}
-            moduleId={moduleId}
-          />
-        </div>
-      );
-    }
+  // Get badge based on genre
+  const getBadge = () => {
+    if (genre === Genre.LOUD) return { text: 'HOT', show: true };
+    if (genre === Genre.NEOBRUTALIST) return { text: 'NEW', show: true };
+    if (genre === Genre.CYBER) return { text: 'LIVE', show: true };
+    return { text: '', show: false };
+  };
 
-    case ModuleType.HERO: {
-      const content = getRandomHero();
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <Hero
-            genre={genre}
-            variation={variation}
-            content={content}
-            moduleId={moduleId}
-          />
-        </div>
-      );
-    }
+  const badge = getBadge();
+  const price = parseFloat(product.price) || 0;
 
-    case ModuleType.BANNER: {
-      const content = getRandomBanner();
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <Banner
-            genre={genre}
-            variation={variation}
-            content={content}
-            moduleId={moduleId}
-          />
-        </div>
-      );
-    }
+  return (
+    <div
+      onClick={handleClick}
+      className="module-wrapper"
+    >
+      {showDebugInfo && <DebugOverlay product={product} genre={genre} />}
 
-    case ModuleType.FEATURE_LIST: {
-      const features = getRandomFeatures();
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <FeatureList
-            genre={genre}
-            variation={variation}
-            features={features}
-            moduleId={moduleId}
-          />
-        </div>
-      );
-    }
+      <div className={`module-card module-product-card ${genreClass}`} data-genre={GENRE_NAMES[genre]}>
+        {/* Badge */}
+        {badge.show && (
+          <div className="module-badge">{badge.text}</div>
+        )}
 
-    case ModuleType.TESTIMONIAL: {
-      const content = getRandomTestimonial();
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <Testimonial
-            genre={genre}
-            variation={variation}
-            content={content}
-            moduleId={moduleId}
-          />
+        {/* Product Image */}
+        <div className="product-image-container">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.title}
+              className="product-image"
+              loading="lazy"
+            />
+          ) : (
+            <div className="product-image-placeholder">No Image</div>
+          )}
         </div>
-      );
-    }
 
-    case ModuleType.CTA: {
-      const content = getRandomCTA();
-      return (
-        <div key={key} onClick={handleClick} className="module-wrapper">
-          <CTA
-            genre={genre}
-            variation={variation}
-            content={content}
-            moduleId={moduleId}
-          />
+        {/* Product Info */}
+        <div className="product-info">
+          <span className="product-vendor">{product.vendor}</span>
+          <h3 className="product-title">{product.title}</h3>
+          {product.description && (
+            <p className="product-description">{product.description}</p>
+          )}
+          <div className="product-price">
+            <span className="price-currency">{product.currency}</span>
+            <span className="price-amount">${price.toFixed(2)}</span>
+          </div>
+          <div className="product-store">
+            <span className="store-domain">from {product.store_domain}</span>
+          </div>
         </div>
-      );
-    }
 
-    default:
-      return (
-        <div key={key} className="module-wrapper module-unknown">
-          Unknown Module Type: {moduleType}
-        </div>
-      );
-  }
-};
+        {/* Action Button */}
+        <a
+          href={product.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="module-btn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {getButtonText()}
+        </a>
+      </div>
+    </div>
+  );
+});
+
+ProductCard.displayName = 'ProductCard';
 
 // ============================================
 // RENDERING ENGINE COMPONENT
 // ============================================
 
 export const RenderingEngine: React.FC<RenderingEngineProps> = ({
-  moduleIds,
-  onModuleClick
+  modules,
+  onModuleClick,
+  showDebugInfo = true,
+  onLoadMore,
+  isLoading = false
 }) => {
-  // Memoize rendered modules to prevent unnecessary re-renders
-  const renderedModules = useMemo(() => {
-    return moduleIds.map((id, index) => renderModule(id, index, onModuleClick));
-  }, [moduleIds, onModuleClick]);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Stable callback ref for onLoadMore
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && onLoadMoreRef.current) {
+          onLoadMoreRef.current();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '400px',
+        threshold: 0.1
+      }
+    );
+
+    observerRef.current.observe(loadMoreRef.current);
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
 
   return (
     <div className="rendering-engine">
       <div className="module-grid">
-        {renderedModules}
+        {modules.map((module) => (
+          <ProductCard
+            key={module.id}
+            module={module}
+            onModuleClick={onModuleClick}
+            showDebugInfo={showDebugInfo}
+          />
+        ))}
+      </div>
+
+      {/* Infinite scroll trigger */}
+      <div ref={loadMoreRef} className="load-more-trigger">
+        {isLoading && (
+          <div className="loading-indicator">
+            <div className="loading-spinner"></div>
+            <span>Loading more products...</span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 // ============================================
-// UTILITY: Generate Random Layout
+// UTILITY: Create Product Modules
 // ============================================
 
+let moduleCounter = 0;
+
 /**
- * Generate a random set of module IDs for the storefront
- * Ensures variety by picking different types and genres
+ * Create product modules from API data with random genres
  */
-export function generateRandomLayout(count: number = 6): number[] {
-  const ids: number[] = [];
-
-  // For a 6-slot layout, we want variety
-  // Let's pick different module types and genres
-  for (let i = 0; i < count; i++) {
+export function createProductModules(products: ShopifyProduct[]): ProductModule[] {
+  return products.map((product) => {
+    moduleCounter++;
     const genre = Math.floor(Math.random() * 6) as Genre;
-    const moduleType = i % 6 as ModuleType; // Cycle through types
-    const variation = Math.floor(Math.random() * 3) as Variation;
 
-    ids.push(encodeModuleId(genre, moduleType, variation));
+    return {
+      id: `product-${moduleCounter}-${product.id}`,
+      product,
+      genre
+    };
+  });
+}
+
+/**
+ * Create a batch of product modules for infinite scroll
+ */
+export function createProductBatch(
+  allProducts: ShopifyProduct[],
+  currentCount: number,
+  batchSize: number = 3
+): ProductModule[] {
+  const modules: ProductModule[] = [];
+
+  for (let i = 0; i < batchSize; i++) {
+    // Cycle through products if we run out
+    const productIndex = (currentCount + i) % allProducts.length;
+    const product = allProducts[productIndex];
+    const genre = Math.floor(Math.random() * 6) as Genre;
+
+    moduleCounter++;
+    modules.push({
+      id: `product-${moduleCounter}-${product.id}-${Date.now()}-${i}`,
+      product,
+      genre
+    });
   }
 
-  return ids;
-}
-
-/**
- * Generate a layout with all product cards (different genres)
- */
-export function generateProductShowcase(): number[] {
-  return [
-    encodeModuleId(Genre.BASE, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.MINIMALIST, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.NEOBRUTALIST, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.GLASSMORPHISM, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.LOUD, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.CYBER, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-  ];
-}
-
-/**
- * Generate a mixed storefront layout
- */
-export function generateStorefrontLayout(): number[] {
-  return [
-    encodeModuleId(Genre.BASE, ModuleType.HERO, Variation.DEFAULT),
-    encodeModuleId(Genre.MINIMALIST, ModuleType.PRODUCT_CARD, Variation.DEFAULT),
-    encodeModuleId(Genre.NEOBRUTALIST, ModuleType.BANNER, Variation.DEFAULT),
-    encodeModuleId(Genre.GLASSMORPHISM, ModuleType.FEATURE_LIST, Variation.DEFAULT),
-    encodeModuleId(Genre.LOUD, ModuleType.CTA, Variation.DEFAULT),
-    encodeModuleId(Genre.CYBER, ModuleType.TESTIMONIAL, Variation.DEFAULT),
-  ];
-}
-
-/**
- * Replace a module at a specific index with a new one of the same type
- * but different genre/variation
- */
-export function replaceModule(
-  currentIds: number[],
-  index: number,
-  newGenre?: Genre,
-  newVariation?: Variation
-): number[] {
-  const newIds = [...currentIds];
-  const currentTag = decodeModuleId(currentIds[index]);
-
-  // Keep the same module type, but change genre/variation
-  const genre = newGenre ?? (Math.floor(Math.random() * 6) as Genre);
-  const variation = newVariation ?? (Math.floor(Math.random() * 3) as Variation);
-
-  newIds[index] = encodeModuleId(genre, currentTag.moduleType, variation);
-
-  return newIds;
+  return modules;
 }
 
 export default RenderingEngine;

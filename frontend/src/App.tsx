@@ -1,96 +1,179 @@
 /**
  * Gen UI - Self-Evolving AI Storefront
  * 
- * Main application component that demonstrates the rendering engine.
+ * Main application component that displays real Shopify products
+ * with different visual genre styles.
+ * 
  * Features:
- * - 2x3 grid layout with mixed module types
- * - Demo controls to shuffle/randomize modules
- * - Real-time module replacement simulation
+ * - Fetches real products from backend (Shopify scraper)
+ * - 3-column grid layout with infinite scroll
+ * - 6 visual genres for product cards
+ * - Dynamic genre assignment
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   RenderingEngine,
-  generateRandomLayout,
-  generateProductShowcase,
-  generateStorefrontLayout,
-  replaceModule
+  createProductModules,
+  createProductBatch
 } from './components/RenderingEngine';
-import {
-  decodeModuleId,
-  Genre,
-  encodeModuleId,
-  Variation,
-  GENRE_NAMES,
-  MODULE_TYPE_NAMES
-} from './schema/types';
-import type { ModuleTag } from './schema/types';
+import type { ProductModule } from './components/RenderingEngine';
+import { fetchProducts } from './api/products';
+import type { ShopifyProduct } from './api/products';
+import { Genre, GENRE_NAMES } from './schema/types';
 
 function App() {
-  // Layout state - array of module IDs
-  const [layoutIds, setLayoutIds] = useState<number[]>(() => generateStorefrontLayout());
+  // All products loaded from API
+  const [allProducts, setAllProducts] = useState<ShopifyProduct[]>([]);
 
-  // Track last clicked module for display
-  const [lastClicked, setLastClicked] = useState<{ id: number; tag: ModuleTag } | null>(null);
+  // Current modules being displayed
+  const [modules, setModules] = useState<ProductModule[]>([]);
 
-  // Handle module click - log info and potentially trigger replacement
-  const handleModuleClick = useCallback((moduleId: number, tag: ModuleTag) => {
-    setLastClicked({ id: moduleId, tag });
-    console.log('Module clicked:', {
-      id: moduleId,
-      genre: GENRE_NAMES[tag.genre],
-      type: MODULE_TYPE_NAMES[tag.moduleType],
-      variation: tag.variation,
-      canReplace: MODULE_TYPE_NAMES[tag.canReplace]
+  // Loading states
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const isLoadingMoreRef = useRef(false);
+
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+
+  // Track last clicked product for display
+  const [lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
+
+  // Fetch products on startup
+  useEffect(() => {
+    async function loadProducts() {
+      setIsInitialLoading(true);
+      setError(null);
+
+      try {
+        const products = await fetchProducts();
+
+        if (products.length === 0) {
+          setError('No products found. Make sure the backend is running and products are scraped.');
+          setIsInitialLoading(false);
+          return;
+        }
+
+        setAllProducts(products);
+
+        // Create initial set of modules (6 products)
+        const initialProducts = products.slice(0, 6);
+        const initialModules = createProductModules(initialProducts);
+        setModules(initialModules);
+
+        console.log(`Loaded ${products.length} products, displaying first 6`);
+      } catch (err) {
+        setError('Failed to load products. Make sure the backend server is running.');
+        console.error('Error loading products:', err);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, []);
+
+  // Handle product click
+  const handleModuleClick = useCallback((product: ShopifyProduct, genre: Genre) => {
+    setLastClicked({ product, genre });
+    console.log('Product clicked:', {
+      id: product.id,
+      title: product.title,
+      genre: GENRE_NAMES[genre],
+      store: product.store_domain,
+      price: product.price
     });
   }, []);
 
-  // Shuffle all modules randomly
-  const handleShuffle = () => {
-    setLayoutIds(generateRandomLayout(6));
+  // Load more products when scrolling (infinite scroll)
+  const handleLoadMore = useCallback(() => {
+    if (isLoadingMoreRef.current || allProducts.length === 0) return;
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    // Create new product modules with random genres
+    const newModules = createProductBatch(allProducts, modules.length, 3);
+
+    setModules(prev => [...prev, ...newModules]);
+
+    // Small delay before allowing next load
+    setTimeout(() => {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }, 100);
+
+    console.log('Loaded 3 more products, total:', modules.length + 3);
+  }, [allProducts, modules.length]);
+
+  // Shuffle genres for all modules
+  const handleGenreShuffle = () => {
+    setModules(prev => prev.map(module => ({
+      ...module,
+      id: `${module.id}-reshuffled-${Date.now()}`,
+      genre: Math.floor(Math.random() * 6) as Genre
+    })));
     setLastClicked(null);
   };
 
-  // Show all product cards (different genres)
-  const handleProductShowcase = () => {
-    setLayoutIds(generateProductShowcase());
+  // Reset to initial state
+  const handleReset = () => {
+    if (allProducts.length > 0) {
+      const initialProducts = allProducts.slice(0, 6);
+      const initialModules = createProductModules(initialProducts);
+      setModules(initialModules);
+    }
     setLastClicked(null);
   };
 
-  // Show mixed storefront layout
-  const handleStorefrontLayout = () => {
-    setLayoutIds(generateStorefrontLayout());
+  // Group by genre
+  const handleGroupByGenre = () => {
+    if (allProducts.length < 6) return;
+
+    const genreModules: ProductModule[] = [];
+    for (let genre = 0; genre < 6; genre++) {
+      const product = allProducts[genre % allProducts.length];
+      genreModules.push({
+        id: `genre-showcase-${genre}-${Date.now()}`,
+        product,
+        genre: genre as Genre
+      });
+    }
+    setModules(genreModules);
     setLastClicked(null);
   };
 
-  // Replace a specific module with random genre of same type
-  const handleReplaceRandom = (index: number) => {
-    setLayoutIds(prev => replaceModule(prev, index));
-  };
-
-  // Replace all modules with same type but different genres
-  const handleGenreSweep = () => {
-    // Get current module types and sweep through all genres
-    const currentTags = layoutIds.map(id => decodeModuleId(id));
-    const newIds = currentTags.map((tag, i) =>
-      encodeModuleId(
-        i as Genre, // Each slot gets a different genre
-        tag.moduleType,
-        tag.variation
-      )
+  // Loading state
+  if (isInitialLoading) {
+    return (
+      <div className="app-container">
+        <div className="loading-screen">
+          <div className="loading-spinner"></div>
+          <h2>Loading Products...</h2>
+          <p>Fetching from Shopify stores</p>
+        </div>
+      </div>
     );
-    setLayoutIds(newIds);
-    setLastClicked(null);
-  };
+  }
 
-  // Simulate backend pushing new module (random replacement)
-  const handleSimulateBackendPush = () => {
-    const randomIndex = Math.floor(Math.random() * layoutIds.length);
-    const randomGenre = Math.floor(Math.random() * 6) as Genre;
-    const randomVariation = Math.floor(Math.random() * 3) as Variation;
-
-    setLayoutIds(prev => replaceModule(prev, randomIndex, randomGenre, randomVariation));
-  };
+  // Error state
+  if (error) {
+    return (
+      <div className="app-container">
+        <div className="error-screen">
+          <h2>⚠️ Error Loading Products</h2>
+          <p>{error}</p>
+          <p style={{ marginTop: '1rem', color: '#71717a', fontSize: '0.875rem' }}>
+            1. Start the backend: <code>cd backend && uvicorn app.main:app --reload</code><br />
+            2. Run the scraper: <code>python -m backend.app.services.shopify_service</code>
+          </p>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '1rem' }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
@@ -98,23 +181,20 @@ function App() {
       <header className="app-header">
         <h1>GEN UI: Self-Evolving Storefront</h1>
         <p>
-          108 module templates (6 genres × 6 types × 3 variations) •
-          Click any module to inspect
+          Real Products from Shopify • 6 Visual Genres • Infinite Scroll
         </p>
-        <p style={{ color: '#737373', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-          <a href="/tracking-test.html" style={{ color: '#6366f1' }}>/tracking-test.html</a> to test telemetry tracking
+        <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+          📦 {allProducts.length} products loaded • Displaying {modules.length} • Scroll for more
         </p>
 
         {/* Control Buttons */}
         <div className="app-controls">
-          <button onClick={handleShuffle}>🎲 Random Layout</button>
-          <button onClick={handleProductShowcase}>🛍️ Product Showcase</button>
-          <button onClick={handleStorefrontLayout}>🏪 Storefront Layout</button>
-          <button onClick={handleGenreSweep}>🎨 Genre Sweep</button>
-          <button onClick={handleSimulateBackendPush}>⚡ Simulate Update</button>
+          <button onClick={handleReset}>🔄 Reset (6)</button>
+          <button onClick={handleGenreShuffle}>🎨 Shuffle Genres</button>
+          <button onClick={handleGroupByGenre}>📊 Genre Showcase</button>
         </div>
 
-        {/* Module Info Display */}
+        {/* Product Info Display */}
         {lastClicked && (
           <div style={{
             marginTop: '1rem',
@@ -122,37 +202,24 @@ function App() {
             background: 'rgba(59, 130, 246, 0.1)',
             borderRadius: '8px',
             fontSize: '0.875rem',
-            display: 'inline-block'
+            display: 'inline-block',
+            textAlign: 'left'
           }}>
-            <strong>Selected:</strong>{' '}
-            ID {lastClicked.id} • {GENRE_NAMES[lastClicked.tag.genre]} • {MODULE_TYPE_NAMES[lastClicked.tag.moduleType]}
-            {' '}
-            <button
-              onClick={() => {
-                const index = layoutIds.indexOf(lastClicked.id);
-                if (index !== -1) handleReplaceRandom(index);
-              }}
-              style={{
-                marginLeft: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                background: '#3b82f6',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                cursor: 'pointer'
-              }}
-            >
-              Replace
-            </button>
+            <strong>Selected:</strong> {lastClicked.product.title}<br />
+            <span style={{ color: '#71717a' }}>
+              {GENRE_NAMES[lastClicked.genre]} • ${parseFloat(lastClicked.product.price).toFixed(2)} • {lastClicked.product.store_domain}
+            </span>
           </div>
         )}
       </header>
 
-      {/* Rendering Engine */}
+      {/* Rendering Engine with Infinite Scroll */}
       <RenderingEngine
-        moduleIds={layoutIds}
+        modules={modules}
         onModuleClick={handleModuleClick}
+        showDebugInfo={true}
+        onLoadMore={handleLoadMore}
+        isLoading={isLoadingMore}
       />
 
       {/* Debug Info */}
@@ -163,7 +230,7 @@ function App() {
         color: '#71717a',
         textAlign: 'center'
       }}>
-        Current Layout IDs: [{layoutIds.join(', ')}]
+        Products: {modules.length} displayed / {allProducts.length} total • Scroll down for more
       </footer>
     </div>
   );
