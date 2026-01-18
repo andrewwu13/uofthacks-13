@@ -68,11 +68,11 @@ function App() {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   // Pool of Template IDs (Integers 0-35)
-  // Initialize with [0,0,0,0,0,0] (All Base/ProductCard)
-  const idPoolRef = useRef<number[]>([0, 0, 0, 0, 0, 0]); // Use ref for pool to persist without re-renders
+  // Initialize with diverse IDs - one per genre (0=base, 6=minimalist, 12=neobrutalist, etc.)
+  const idPoolRef = useRef<number[]>([0, 6, 12, 18, 24, 30]); // Start diverse for variety
   const idPool = idPoolRef.current;
 
-  // SSE layout updates handler
+  // SSE layout updates handler - AGGRESSIVE EVOLUTION
   const handleLayoutUpdate = useCallback((layout: any) => { // Using any for flexible payload
     console.log('[App] Layout update received:', layout);
 
@@ -80,15 +80,19 @@ function App() {
     const suggestedId = layout.suggested_id;
     if (typeof suggestedId === 'number') {
 
-      // 2. Update Pool (Evolutionary Step)
-      // Replace a random slot in the pool with the new suggestion
-      const replaceIndex = Math.floor(Math.random() * idPool.length);
-      const oldId = idPool[replaceIndex];
-      idPool[replaceIndex] = suggestedId;
+      // 2. AGGRESSIVE Update Pool - Replace HALF the pool (3 slots) with the new suggestion
+      // This ensures faster convergence to recommended templates
+      const slotsToReplace = 3; // Replace half the pool
+      const replacedSlots: number[] = [];
 
-      // LOG ONLY - Do not re-render existing modules
-      console.log(`[Evolution] Replaced ID ${oldId} with ${suggestedId} at index ${replaceIndex}. New Pool:`, idPool);
-      console.log(`[Evolution] Future modules will sample from this new pool.`);
+      for (let i = 0; i < slotsToReplace; i++) {
+        const replaceIndex = Math.floor(Math.random() * idPool.length);
+        replacedSlots.push(replaceIndex);
+        idPool[replaceIndex] = suggestedId;
+      }
+
+      // LOG - Show pool state
+      console.log(`[Evolution] 🔥 AGGRESSIVE: Replaced slots ${replacedSlots.join(',')} with ID ${suggestedId}. New Pool:`, [...idPool]);
     }
   }, []);
 
