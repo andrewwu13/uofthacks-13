@@ -1,4 +1,4 @@
-import { Genre, ShopifyProduct, ProductModule } from '../schema/types';
+import { Genre, type ShopifyProduct, type ProductModule } from '../schema/types';
 
 let moduleCounter = 0;
 

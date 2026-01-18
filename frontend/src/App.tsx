@@ -16,10 +16,12 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { RenderingEngine } from './components/RenderingEngine';
 import { createProductModules, createProductBatch } from './utils/dummyData';
 import { fetchProducts } from './api/products';
-import type { ShopifyProduct } from './schema/types';
-import { Genre, GENRE_NAMES, ProductModule } from './schema/types';
-import { initTelemetry, type TelemetryBatch } from './tracking';
-import { useSSELayout, type LayoutUpdate } from './hooks/useSSELayout';
+import type { ShopifyProduct, ProductModule, Genre } from './schema/types';
+import { GENRE_NAMES } from './schema/types';
+import { initTelemetry } from './tracking';
+import type { TelemetryBatch } from './tracking';
+import { useSSELayout } from './hooks/useSSELayout';
+import type { LayoutUpdate } from './hooks/useSSELayout';
 
 // Backend API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';

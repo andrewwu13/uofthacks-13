@@ -1,5 +1,6 @@
 import React from 'react';
-import { ProductData, Genre, GENRE_NAMES } from '../../../schema/types';
+import type { ProductData, Genre } from '../../../schema/types';
+import { GENRE_NAMES } from '../../../schema/types';
 
 export interface LayoutProps {
     product: ProductData;

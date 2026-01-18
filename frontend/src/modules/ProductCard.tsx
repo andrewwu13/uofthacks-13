@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
-import { Genre, GENRE_CSS_CLASSES, GENRE_NAMES, Variation } from '../schema/types';
-import type { ProductData } from '../schema/types';
+import type { ProductData, Variation } from '../schema/types';
+import { Genre, GENRE_CSS_CLASSES, GENRE_NAMES } from '../schema/types';
 
 interface ProductCardProps {
     genre: Genre;
@@ -61,7 +61,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {/* Product Image */}
             <div className="product-image-container">
                 <img
-                    src={product.imageUrl}
+                    src={product.imageUrl ?? undefined}
                     alt={product.title}
                     className="product-image"
                     loading="lazy"
