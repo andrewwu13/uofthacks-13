@@ -1059,3 +1059,355 @@ button {
   color: var(--g-text-muted);
   font-size: 0.875rem;
 }
+/* ============================================
+   NEW LAYOUT STYLES (36-Module System)
+   ============================================ */
+
+/* Common Inner Elements */
+.product-image-container,
+.compact-image-container,
+.gallery-image-wrapper,
+.tech-thumb,
+.bold-image-strip {
+  position: relative;
+  overflow: hidden;
+  background: var(--g-bg-secondary);
+}
+
+.product-image,
+.tech-image,
+.bold-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-medium);
+}
+
+.module-btn {
+  background: var(--g-accent);
+  color: var(--app-bg); /* Contrast text */
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--g-radius);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-fast);
+  margin-top: auto;
+}
+
+.module-btn:hover {
+  background: var(--g-accent-hover);
+  transform: translateY(-1px);
+}
+
+/* LAYOUT 0: STANDARD (Card) */
+.layout-standard {
+  grid-column: span 1;
+}
+
+.module-layout-standard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  gap: 1rem;
+  height: 100%;
+  position: relative;
+}
+
+.module-layout-standard .product-image-container {
+  aspect-ratio: 1;
+  border-radius: calc(var(--g-radius) - 4px);
+}
+
+.module-layout-standard .product-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.module-layout-standard .product-vendor {
+  font-size: 0.75rem;
+  color: var(--g-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.module-layout-standard .product-price {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--g-accent);
+  margin-top: 0.5rem;
+}
+
+/* LAYOUT 1: COMPACT (List) */
+.layout-compact {
+  grid-column: span 1; /* Or span 3 if we want full width rows */
+}
+
+.module-layout-compact {
+  padding: 1rem;
+  height: 100%;
+}
+
+.compact-row {
+  display: flex;
+  gap: 1rem;
+  height: 100%;
+  align-items: center;
+}
+
+.compact-image-container {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: calc(var(--g-radius) - 4px);
+}
+
+.compact-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.compact-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.compact-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+/* LAYOUT 2: FEATURED (Hero) */
+.layout-featured {
+  grid-column: span 2; /* Span 2 columns */
+  grid-row: span 2;    /* Span 2 rows */
+}
+
+.module-layout-featured {
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  min-height: 400px; /* Ensure height */
+  display: flex;
+  align-items: flex-end;
+  /* Use ::before for overlay to generic dark/light */
+}
+
+.module-layout-featured::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  border-radius: var(--g-radius);
+}
+
+.featured-content {
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+  width: 100%;
+  color: #fff; /* Always white on overlay */
+}
+
+.featured-label {
+  display: inline-block;
+  background: var(--g-accent);
+  color: #000;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.module-layout-featured .product-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+
+/* GENRE OVERRIDES FOR FEATURED */
+.genre-minimalist.layout-featured .product-title {
+  color: #000; /* Minimalist might not have dark overlay */
+  /* This is tricky if image is dark. Assume minimalist images are light/studio */
+}
+/* Re-force overlay for minimalist to ensure readability? Or assume design system */
+
+/* LAYOUT 3: GALLERY (Visual) */
+.layout-gallery {
+  grid-column: span 1;
+}
+
+.module-layout-gallery {
+  padding: 0;
+  overflow: hidden;
+}
+
+.gallery-image-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.gallery-hover-info {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity var(--transition-medium);
+  backdrop-filter: blur(4px);
+}
+
+.module-layout-gallery:hover .gallery-hover-info {
+  opacity: 1;
+}
+
+/* LAYOUT 4: TECHNICAL (Data) */
+.layout-technical {
+  grid-column: span 1;
+}
+
+.module-layout-technical {
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.tech-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--g-border); /* Use border color */
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.tech-grid {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tech-thumb {
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--g-border);
+}
+
+.tech-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  gap: 1rem;
+}
+
+.tech-label {
+  color: var(--g-text-muted);
+}
+
+.tech-btn {
+  width: 100%;
+  font-family: inherit;
+  border: 1px dashed var(--g-text);
+  background: transparent;
+  color: var(--g-text);
+}
+
+.tech-btn:hover {
+  background: var(--g-text);
+  color: var(--app-bg);
+}
+
+/* LAYOUT 5: BOLD (Typography) */
+.layout-bold {
+  grid-column: span 1; /* Or 2 */
+}
+
+.module-layout-bold {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bold-title {
+  font-size: 3rem;
+  line-height: 0.9;
+  font-weight: 900;
+  text-transform: uppercase;
+  word-break: break-word; /* Handle long words */
+  margin-bottom: 1rem;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--g-text);
+  /* Optional: fill on hover */
+  transition: color 0.3s ease;
+}
+
+.module-layout-bold:hover .bold-title {
+  color: var(--g-text);
+}
+
+.bold-image-strip {
+  height: 60px;
+  margin: 1rem 0;
+  border-radius: 100px;
+}
+
+.bold-meta {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  border-top: 2px solid var(--g-text);
+  padding-top: 0.5rem;
+}
+
+/* GENRE-SPECIFIC TWEAKS */
+.genre-neobrutalist .module-btn {
+  box-shadow: 4px 4px 0 0 #000;
+  border: 2px solid #000;
+}
+.genre-neobrutalist .module-btn:hover {
+  box-shadow: 2px 2px 0 0 #000;
+  transform: translate(2px, 2px);
+}
+
+.genre-glassmorphism .module-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.genre-cyber .module-btn {
+  text-shadow: 0 0 5px currentColor;
+  border: 1px solid currentColor;
+  background: transparent;
+}
+.genre-cyber .module-btn:hover {
+  background: var(--g-accent);
+  color: #000;
+}
+
+/* RESPONSIVE GRID OVERRIDES */
+@media (max-width: 768px) {
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+  .layout-featured,
+  .layout-standard,
+  .layout-compact,
+  .layout-gallery,
+  .layout-technical,
+  .layout-bold {
+    grid-column: span 1 !important; /* Force single column on mobile */
+  }
+}

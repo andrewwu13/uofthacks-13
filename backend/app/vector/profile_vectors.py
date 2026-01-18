@@ -178,32 +178,41 @@ def get_recommended_genre(profile_dict: dict) -> str:
     return "base"  # Fallback
 
 
+
 def get_recommended_template_id(profile_dict: dict) -> int:
     """
     Get the recommended integer Template ID for a user profile.
-    Searches for the best matching 'product-grid' module (Type 0).
+    Searches for the best matching module from the 36-module catalog.
     
     Args:
         profile_dict: UserProfile dict
         
     Returns:
-        int: Module ID (0-35)
+        int: Module ID (0-35, encoding: genre*6 + layout)
     """
     from app.vector.vector_store import search_similar_modules
+    from app.vector.module_vectors import decode_module_id
     
     # Convert profile to vector
     profile_vec = user_profile_to_vector(profile_dict)
     
-    # Query vector store for similar modules (specifically product-grids which map to cards)
-    results = search_similar_modules(profile_vec, module_types=["product-grid"])
+    # Query vector store for similar modules (search all 36)
+    results = search_similar_modules(profile_vec, top_k=5)
     
-    # Get top match
-    grid_results = results.get("product-grid", [])
-    if grid_results:
-        top_result = grid_results[0]
-        # The ID is now an integer
+    # Get top matches with debug logging
+    # Note: search_similar_modules now returns {"recommended": [...]}
+    recommendations = results.get("recommended", [])
+    
+    if recommendations:
+        # Debug: Show top 3 candidates with scores
+        print(f"[Vector] Top {len(recommendations)} matches:")
+        for i, result in enumerate(recommendations[:3]):
+            decoded = decode_module_id(result.id)
+            print(f"  {i+1}. ID={result.id} ({decoded['genre']}/{decoded['layout']}) score={result.score:.4f}")
+        
+        top_result = recommendations[0]
         return top_result.id
     
-    # Fallback to ID 0 (Base Product Card)
+    # Fallback to ID 0 (Base Standard)
     return 0
 

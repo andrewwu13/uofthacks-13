@@ -119,40 +119,28 @@ export const GENRE_CSS_CLASSES: Record<Genre, string> = {
 };
 
 // ============================================
-// MODULE TYPE DEFINITIONS (Functional Components)
+// LAYOUT TYPE DEFINITIONS (Functional Components)
 // ============================================
 
-export const ModuleType = {
-  PRODUCT_CARD: 0,
-  HERO: 1,
-  BANNER: 2,
-  FEATURE_LIST: 3,
-  TESTIMONIAL: 4,
-  CTA: 5
+export const LayoutType = {
+  STANDARD: 0,   // Standard Card
+  COMPACT: 1,    // Compact / List
+  FEATURED: 2,   // Featured / Heroic
+  GALLERY: 3,    // Gallery / Visual
+  TECHNICAL: 4,  // Technical / Data
+  BOLD: 5        // Typographic / Bold
 } as const;
 
-export type ModuleType = typeof ModuleType[keyof typeof ModuleType];
+export type LayoutType = typeof LayoutType[keyof typeof LayoutType];
 
-export const MODULE_TYPE_NAMES: Record<ModuleType, string> = {
-  [ModuleType.PRODUCT_CARD]: 'ProductCard',
-  [ModuleType.HERO]: 'Hero',
-  [ModuleType.BANNER]: 'Banner',
-  [ModuleType.FEATURE_LIST]: 'FeatureList',
-  [ModuleType.TESTIMONIAL]: 'Testimonial',
-  [ModuleType.CTA]: 'CTA'
+export const LAYOUT_TYPE_NAMES: Record<LayoutType, string> = {
+  [LayoutType.STANDARD]: 'Standard',
+  [LayoutType.COMPACT]: 'Compact',
+  [LayoutType.FEATURED]: 'Featured',
+  [LayoutType.GALLERY]: 'Gallery',
+  [LayoutType.TECHNICAL]: 'Technical',
+  [LayoutType.BOLD]: 'Bold'
 };
-
-// ============================================
-// VARIATION DEFINITIONS
-// ============================================
-
-export const Variation = {
-  DEFAULT: 0,
-  COMPACT: 1,
-  EXPANDED: 2
-} as const;
-
-export type Variation = typeof Variation[keyof typeof Variation];
 
 // ============================================
 // MODULE METADATA & TAGGING
@@ -161,11 +149,9 @@ export type Variation = typeof Variation[keyof typeof Variation];
 export interface ModuleTag {
   genre: Genre;
   genreName: string;
-  moduleType: ModuleType;
-  moduleTypeName: string;
-  variation: Variation;
+  layout: LayoutType;
+  layoutName: string;
   isLoud: boolean;
-  canReplace: ModuleType;
 }
 
 export interface ModuleMetadata {
@@ -178,15 +164,45 @@ export interface ModuleMetadata {
 // PRODUCT DATA
 // ============================================
 
-export interface ProductData {
-  id: string;
+export interface ShopifyProduct {
+  id: number;
   title: string;
-  description: string;
+  description: string | null;
+  vendor: string;
+  price: string;
+  currency: string;
+  image: string | null;
+  url: string;
+  handle: string;
+  store_domain: string;
+}
+
+export interface ProductData {
+  id: string | number;
+  title: string;
+  description: string | null;
   price: number;
   currency: string;
-  imageUrl: string;
+  imageUrl: string | null;
   vendor: string;
   category: string;
+  url?: string;
+}
+
+export interface ProductModule {
+  id: string;
+  templateId?: number;
+  product: ShopifyProduct;
+  genre: Genre;
+}
+
+export interface RenderingEngineProps {
+  modules: ProductModule[];
+  onModuleClick?: (product: ShopifyProduct, genre: Genre) => void;
+  showDebugInfo?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoading?: boolean;
 }
 
 // ============================================
@@ -210,38 +226,21 @@ export interface LayoutConfig {
 // ID ENCODING/DECODING FUNCTIONS
 // ============================================
 
-const MODULES_PER_GENRE = 18;  // 6 types × 3 variations
-const VARIATIONS_PER_TYPE = 3;
+
+// ============================================
+// ID ENCODING/DECODING FUNCTIONS (0-35 System)
+// ============================================
+
+const MODULES_PER_GENRE = 6;
 
 /**
- * Encode genre, moduleType, variation into a single module ID
+ * Encode genre and layout into integer ID (0-35)
  */
 export function encodeModuleId(
   genre: Genre,
-  moduleType: ModuleType,
-  variation: Variation = Variation.DEFAULT
+  layout: LayoutType
 ): number {
-  return (genre * MODULES_PER_GENRE) + (moduleType * VARIATIONS_PER_TYPE) + variation;
-}
-
-/**
- * Decode a module ID into its components
- */
-export function decodeModuleId(id: number): ModuleTag {
-  const genre = (Math.floor(id / MODULES_PER_GENRE) % 6) as Genre;
-  const remainder = id % MODULES_PER_GENRE;
-  const moduleType = Math.floor(remainder / VARIATIONS_PER_TYPE) as ModuleType;
-  const variation = (remainder % VARIATIONS_PER_TYPE) as Variation;
-
-  return {
-    genre,
-    genreName: GENRE_NAMES[genre],
-    moduleType,
-    moduleTypeName: MODULE_TYPE_NAMES[moduleType],
-    variation,
-    isLoud: genre === Genre.LOUD,
-    canReplace: moduleType
-  };
+  return (genre * MODULES_PER_GENRE) + layout;
 }
 
 /**
@@ -250,10 +249,9 @@ export function decodeModuleId(id: number): ModuleTag {
 export function getModuleCssClass(id: number): string {
   const tag = decodeModuleId(id);
   const genreClass = GENRE_CSS_CLASSES[tag.genre];
-  const typeClass = `module-${MODULE_TYPE_NAMES[tag.moduleType].toLowerCase()}`;
-  const variationClass = `variation-${tag.variation}`;
+  const layoutClass = `layout-${LAYOUT_TYPE_NAMES[tag.layout].toLowerCase()}`;
 
-  return `${genreClass} ${typeClass} ${variationClass}`;
+  return `${genreClass} ${layoutClass}`;
 }
 
 /**
@@ -268,38 +266,49 @@ export function getModuleMetadata(id: number): ModuleMetadata {
 }
 
 /**
- * Generate all possible module IDs (108 total)
+ * Decode a module ID into its components
+ */
+export function decodeModuleId(id: number): ModuleTag {
+  const genre = (Math.floor(id / MODULES_PER_GENRE) % 6) as Genre;
+  const layout = (id % MODULES_PER_GENRE) as LayoutType;
+
+  return {
+    genre,
+    genreName: GENRE_NAMES[genre],
+    layout,
+    layoutName: LAYOUT_TYPE_NAMES[layout],
+    isLoud: genre === Genre.LOUD,
+  };
+}
+
+/**
+ * Get all module IDs (36 total)
  */
 export function getAllModuleIds(): number[] {
   const ids: number[] = [];
   for (let genre = 0; genre < 6; genre++) {
-    for (let moduleType = 0; moduleType < 6; moduleType++) {
-      for (let variation = 0; variation < 3; variation++) {
-        ids.push(encodeModuleId(genre as Genre, moduleType as ModuleType, variation as Variation));
-      }
+    for (let layout = 0; layout < 6; layout++) {
+      ids.push(encodeModuleId(genre as Genre, layout as LayoutType));
     }
   }
   return ids;
 }
 
 /**
- * Get random module ID of a specific type (for replacement)
+ * Get random module ID of a specific layout (for replacement)
  */
-export function getRandomModuleOfType(moduleType: ModuleType): number {
+export function getRandomModuleOfLayout(layout: LayoutType): number {
   const genre = Math.floor(Math.random() * 6) as Genre;
-  const variation = Math.floor(Math.random() * 3) as Variation;
-  return encodeModuleId(genre, moduleType, variation);
+  return encodeModuleId(genre, layout);
 }
 
 /**
- * Get all module IDs of a specific type
+ * Get all module IDs of a specific layout
  */
-export function getModulesOfType(moduleType: ModuleType): number[] {
+export function getModulesOfLayout(layout: LayoutType): number[] {
   const ids: number[] = [];
   for (let genre = 0; genre < 6; genre++) {
-    for (let variation = 0; variation < 3; variation++) {
-      ids.push(encodeModuleId(genre as Genre, moduleType as ModuleType, variation as Variation));
-    }
+    ids.push(encodeModuleId(genre as Genre, layout));
   }
   return ids;
 }
@@ -309,10 +318,8 @@ export function getModulesOfType(moduleType: ModuleType): number[] {
  */
 export function getModulesOfGenre(genre: Genre): number[] {
   const ids: number[] = [];
-  for (let moduleType = 0; moduleType < 6; moduleType++) {
-    for (let variation = 0; variation < 3; variation++) {
-      ids.push(encodeModuleId(genre, moduleType as ModuleType, variation as Variation));
-    }
+  for (let layout = 0; layout < 6; layout++) {
+    ids.push(encodeModuleId(genre, layout as LayoutType));
   }
   return ids;
 }

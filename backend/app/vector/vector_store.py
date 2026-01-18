@@ -135,6 +135,7 @@ class VectorStore:
 vector_store = VectorStore()
 
 
+
 def initialize_vector_store():
     """
     Initialize the global vector store with module catalog.
@@ -150,9 +151,8 @@ def initialize_vector_store():
             id=module.module_id,
             vector=vector,
             metadata={
-                "module_type": module.module_type,
+                "layout": module.layout,
                 "genre": module.genre,
-                "variant": module.variant,
                 "tags": module.tags,
             }
         )
@@ -163,27 +163,25 @@ def initialize_vector_store():
 def search_similar_modules(
     profile_vector: FeatureVector,
     module_types: List[str] = None,
-    top_k: int = 3
+    top_k: int = 5
 ) -> Dict[str, List[SearchResult]]:
     """
-    Search for similar modules for each component type.
+    Search for similar modules.
     
     Args:
         profile_vector: User profile feature vector
-        module_types: Types to search (default: hero, product-grid, cta)
-        top_k: Results per type
+        module_types: Legacy arg, ignored (or preserved for compat). 
+                      We now return a 'recommended' list.
+        top_k: Results to return
         
     Returns:
-        Dict mapping module_type -> list of SearchResults
+        Dict with 'recommended' key containing SearchResults
     """
-    module_types = module_types or ["hero", "product-grid", "cta"]
-    results = {}
+    # Simply search the entire store, as all modules are now Product Modules
+    # but with different layouts/genres.
+    results = vector_store.search(
+        query=profile_vector,
+        top_k=top_k
+    )
     
-    for mtype in module_types:
-        results[mtype] = vector_store.search_by_type(
-            query=profile_vector,
-            module_type=mtype,
-            top_k=top_k
-        )
-    
-    return results
+    return {"recommended": results}
