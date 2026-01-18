@@ -117,6 +117,8 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
     <div
       onClick={handleClick}
       className="module-wrapper"
+      data-module-id={module.id}
+      data-track-id={`product_${product.id}`}
     >
       {showDebugInfo && <DebugOverlay product={product} genre={genre} />}
 
@@ -143,11 +145,15 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
         {/* Product Info */}
         <div className="product-info">
           <span className="product-vendor">{product.vendor}</span>
-          <h3 className="product-title">{product.title}</h3>
+          <h3 className="product-title" data-track-id={`${product.id}_title`}>{product.title}</h3>
           {product.description && (
             <p className="product-description">{product.description}</p>
           )}
-          <div className="product-price">
+          <div 
+            className="product-price" 
+            data-track-context="price"
+            data-track-id={`${product.id}_price`}
+          >
             <span className="price-currency">{product.currency}</span>
             <span className="price-amount">${price.toFixed(2)}</span>
           </div>
@@ -162,6 +168,7 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
           target="_blank"
           rel="noopener noreferrer"
           className="module-btn"
+          data-track-id={`${product.id}_add_cart`}
           onClick={(e) => e.stopPropagation()}
         >
           {getButtonText()}

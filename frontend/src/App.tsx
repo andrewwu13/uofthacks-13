@@ -9,6 +9,7 @@
  * - 3-column grid layout with infinite scroll
  * - 6 visual genres for product cards
  * - Dynamic genre assignment
+ * - Real-time behavior tracking with frustration signals
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -21,6 +22,30 @@ import type { ProductModule } from './components/RenderingEngine';
 import { fetchProducts } from './api/products';
 import type { ShopifyProduct } from './api/products';
 import { Genre, GENRE_NAMES } from './schema/types';
+import { initTelemetry, type TelemetryBatch } from './tracking';
+import { useSSELayout, type LayoutUpdate } from './hooks/useSSELayout';
+
+// Backend API URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+/**
+ * Send telemetry batch to backend
+ */
+async function sendTelemetryToBackend(batch: TelemetryBatch): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/telemetry/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(batch),
+    });
+    
+    if (!response.ok) {
+      console.warn('[Telemetry] Backend returned error:', response.status);
+    }
+  } catch (error) {
+    console.warn('[Telemetry] Failed to send to backend:', error);
+  }
+}
 
 function App() {
   // All products loaded from API
@@ -39,6 +64,44 @@ function App() {
 
   // Track last clicked product for display
   const [lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
+
+  // Telemetry tracking state
+  const [batchCount, setBatchCount] = useState(0);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // SSE layout updates handler
+  const handleLayoutUpdate = useCallback((layout: LayoutUpdate) => {
+    console.log('[App] Layout update received via SSE:', layout.layout_id);
+    // TODO: Apply layout changes to UI based on layout.components and layout.tokens
+    // For now, just log - actual UI updates would be applied here
+  }, []);
+
+  // SSE connection for layout updates
+  const { isConnected: sseConnected, updateCount: layoutUpdateCount } = useSSELayout({
+    sessionId,
+    onLayoutUpdate: handleLayoutUpdate,
+    enabled: !!sessionId
+  });
+
+  // Initialize telemetry on mount
+  useEffect(() => {
+    const manager = initTelemetry({
+      enableConsoleLog: true,
+      onBatch: (batch) => {
+        setBatchCount(prev => prev + 1);
+        // Send to backend
+        sendTelemetryToBackend(batch);
+      }
+    });
+    
+    setSessionId(manager.getSessionId());
+    console.log('[App] Telemetry initialized:', manager.getSessionId());
+    
+    // Cleanup on unmount
+    return () => {
+      manager.stop();
+    };
+  }, []);
 
   // Fetch products on startup
   useEffect(() => {
@@ -73,6 +136,7 @@ function App() {
 
     loadProducts();
   }, []);
+
 
   // Handle product click
   const handleModuleClick = useCallback((product: ShopifyProduct, genre: Genre) => {
@@ -186,6 +250,24 @@ function App() {
         <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
           📦 {allProducts.length} products loaded • Displaying {modules.length} • Scroll for more
         </p>
+        
+        {/* Tracking Status Indicator */}
+        {sessionId && (
+          <p style={{ color: '#a78bfa', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            🔍 Tracking: {sessionId.slice(0, 20)}... • Batches sent: {batchCount}
+          </p>
+        )}
+        
+        {/* SSE Connection Status */}
+        {sessionId && (
+          <p style={{ 
+            color: sseConnected ? '#22c55e' : '#ef4444', 
+            fontSize: '0.75rem', 
+            marginTop: '0.25rem' 
+          }}>
+            {sseConnected ? '🟢' : '🔴'} SSE: {sseConnected ? 'Connected' : 'Disconnected'} • Layout updates: {layoutUpdateCount}
+          </p>
+        )}
 
         {/* Control Buttons */}
         <div className="app-controls">
