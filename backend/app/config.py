@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
     
+    # Google (for Gemini embeddings)
+    GOOGLE_API_KEY: str = ""
+    
+    # Semantic Cache
+    SEMANTIC_CACHE_ENABLED: bool = True
+    SEMANTIC_CACHE_SIMILARITY_THRESHOLD: float = 0.92
+    SEMANTIC_CACHE_TTL_SECONDS: int = 3600  # 1 hour
+    
     # Backboard
     BACKBOARD_API_KEY: str = ""
     

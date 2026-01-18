@@ -10,6 +10,24 @@ from app.pipeline.redis_keys import RedisKeys
 from app.sse.publisher import sse_publisher
 from app.pipeline import reducer_pipeline
 from app.models.reducer import ReducerOutput, ReducerContext, ReducerPayload
+from app.config import settings
+
+# Import semantic cache
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+cache_dir = os.path.abspath(os.path.join(current_dir, "../../../../cache"))
+if cache_dir not in sys.path:
+    sys.path.insert(0, cache_dir)
+
+try:
+    from semantic_cache import semantic_cache, generate_telemetry_summary
+    SEMANTIC_CACHE_AVAILABLE = True
+except ImportError:
+    logging.getLogger(__name__).warning("Could not import semantic_cache. Caching will be disabled.")
+    SEMANTIC_CACHE_AVAILABLE = False
+    semantic_cache = None
+    generate_telemetry_summary = None
 
 # Import Agent Graph
 import sys
@@ -29,6 +47,30 @@ except ImportError:
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Flag to track if semantic cache has been initialized
+_semantic_cache_initialized = False
+
+
+async def ensure_semantic_cache_initialized():
+    """Initialize semantic cache on first use."""
+    global _semantic_cache_initialized
+    if _semantic_cache_initialized or not SEMANTIC_CACHE_AVAILABLE:
+        return
+    
+    if settings.SEMANTIC_CACHE_ENABLED and settings.GOOGLE_API_KEY:
+        try:
+            semantic_cache.redis = redis_client
+            semantic_cache.threshold = settings.SEMANTIC_CACHE_SIMILARITY_THRESHOLD
+            semantic_cache.ttl = settings.SEMANTIC_CACHE_TTL_SECONDS
+            await semantic_cache.initialize(settings.GOOGLE_API_KEY)
+            _semantic_cache_initialized = True
+            logger.info("Semantic cache initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize semantic cache: {e}")
+    else:
+        if not settings.GOOGLE_API_KEY:
+            logger.warning("Semantic cache disabled: GOOGLE_API_KEY not set")
 
 
 def transform_motor_samples(motor: MotorTelemetryPayload) -> List[Dict]:
@@ -133,65 +175,138 @@ async def process_telemetry_batch(batch: EventBatch):
             except Exception as e:
                 logger.warning(f"Failed to fetch cached state: {e}")
 
-            # 2. Run Agent Graph (Inference)
-            reducer_output = None
+            # 2. Prepare telemetry data for processing
+            motor_data = []
+            if batch.motor:
+                motor_data = transform_motor_samples(batch.motor)
+                logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
             
-            if run_layout_generation:
+            # Extract interaction events (all events in batch)
+            interaction_events = [e.model_dump() for e in batch.events]
+            
+            # Filter 'loud' module events as a subset
+            loud_events = [
+                e for e in interaction_events
+                if (e.get('metadata') or {}).get('is_loud', False) or
+                "loud" in (e.get('target_id') or "").lower()
+            ]
+            
+            # ========================================
+            # Step 2.5: Check Semantic Cache
+            # ========================================
+            cache_hit = False
+            cached_result = None
+            telemetry_summary = None
+            
+            # Initialize semantic cache if needed
+            await ensure_semantic_cache_initialized()
+            
+            if SEMANTIC_CACHE_AVAILABLE and semantic_cache and semantic_cache.is_enabled():
                 try:
-                    # Prepare arguments for agent graph
-                    # Transform motor samples to format expected by motor_analyzer
-                    motor_data = []
-                    if batch.motor:
-                        motor_data = transform_motor_samples(batch.motor)
-                        logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
+                    # Generate telemetry summary for cache lookup
+                    # Estimate motor state from velocity patterns
+                    motor_state = "idle"
+                    if motor_data:
+                        avg_velocity = sum(
+                            (abs(s.get("velocity", {}).get("x", 0)) + abs(s.get("velocity", {}).get("y", 0))) / 2
+                            for s in motor_data[-10:]
+                        ) / min(len(motor_data), 10)
+                        
+                        avg_jerk = 0
+                        if len(motor_data) >= 3:
+                            for i in range(2, min(len(motor_data), 12)):
+                                acc_prev = motor_data[i-1].get("acceleration", {})
+                                acc_curr = motor_data[i].get("acceleration", {})
+                                jerk_x = abs(acc_curr.get("x", 0) - acc_prev.get("x", 0))
+                                jerk_y = abs(acc_curr.get("y", 0) - acc_prev.get("y", 0))
+                                avg_jerk += (jerk_x + jerk_y) / 2
+                            avg_jerk /= min(len(motor_data) - 2, 10)
+                        
+                        # Classify motor state
+                        if avg_velocity < 50:
+                            motor_state = "idle"
+                        elif avg_jerk > 1000 and avg_velocity < 300:
+                            motor_state = "jittery"
+                        elif avg_velocity > 500 and avg_jerk < 500:
+                            motor_state = "determined"
+                        else:
+                            motor_state = "browsing"
                     
-                    # Extract interaction events (all events in batch)
-                    interaction_events = [e.model_dump() for e in batch.events]
-                    
-                    # Filter 'loud' module events as a subset
-                    loud_events = [
-                        e for e in interaction_events
-                        if (e.get('metadata') or {}).get('is_loud', False) or
-                        "loud" in (e.get('target_id') or "").lower()
-                    ]
-                    
-                    logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
-                    
-                    user_profile_dict = await run_layout_generation(
+                    telemetry_summary = generate_telemetry_summary(
                         session_id=batch.session_id,
-                        telemetry_batch=motor_data,
-                        interactions=interaction_events,
-                        loud_module_events=loud_events,
-                        current_preferences=current_preferences,
+                        motor_state=motor_state,
+                        motor_data=motor_data,
+                        interaction_events=interaction_events,
+                        device_type=batch.device_type
                     )
                     
-                    # Query vector store for recommended template ID
-                    if user_profile_dict:
-                        from app.vector import get_recommended_template_id, get_recommended_genre
-                        
-                        # Get Integer ID (0-35) for sampling
-                        suggested_id = get_recommended_template_id(user_profile_dict)
-                        
-                        # Keep genre for logging purposes
-                        recommended_genre = get_recommended_genre(user_profile_dict)
-                        profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
-                        
-                        logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})")
-                    else:
-                        suggested_id = 0
-                        recommended_genre = "base"
-                        profile_summary = "New User"
+                    # Check cache for similar telemetry
+                    cached_result = await semantic_cache.get(telemetry_summary)
+                    
+                    if cached_result:
+                        cache_hit = True
+                        suggested_id = cached_result.get("suggested_id", 0)
+                        recommended_genre = cached_result.get("recommended_genre", "base")
+                        profile_summary = cached_result.get("profile_summary", "Cached User")
+                        logger.info(f"🎯 SEMANTIC CACHE HIT - Skipping agent call. ID: {suggested_id}")
                         
                 except Exception as e:
-                    logger.error(f"Agent Workflow failed: {e}")
+                    logger.warning(f"Semantic cache lookup failed: {e}")
+            
+            # 3. Run Agent Graph (Inference) - ONLY if cache miss
+            if not cache_hit:
+                reducer_output = None
+                
+                if run_layout_generation:
+                    try:
+                        logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
+                        
+                        user_profile_dict = await run_layout_generation(
+                            session_id=batch.session_id,
+                            telemetry_batch=motor_data,
+                            interactions=interaction_events,
+                            loud_module_events=loud_events,
+                            current_preferences=current_preferences,
+                        )
+                        
+                        # Query vector store for recommended template ID
+                        if user_profile_dict:
+                            from app.vector import get_recommended_template_id, get_recommended_genre
+                            
+                            # Get Integer ID (0-35) for sampling
+                            suggested_id = get_recommended_template_id(user_profile_dict)
+                            
+                            # Keep genre for logging purposes
+                            recommended_genre = get_recommended_genre(user_profile_dict)
+                            profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
+                            
+                            logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})")
+                            
+                            # Store result in semantic cache for future requests
+                            if SEMANTIC_CACHE_AVAILABLE and semantic_cache and semantic_cache.is_enabled() and telemetry_summary:
+                                try:
+                                    await semantic_cache.set(telemetry_summary, {
+                                        "suggested_id": suggested_id,
+                                        "recommended_genre": recommended_genre,
+                                        "profile_summary": profile_summary,
+                                    })
+                                except Exception as e:
+                                    logger.warning(f"Failed to store result in semantic cache: {e}")
+                        else:
+                            suggested_id = 0
+                            recommended_genre = "base"
+                            profile_summary = "New User"
+                            
+                    except Exception as e:
+                        logger.error(f"Agent Workflow failed: {e}")
+                        suggested_id = 0
+                        recommended_genre = "base"
+                        profile_summary = "Fallback User"
+                else:
+                    # Agent disabled
                     suggested_id = 0
                     recommended_genre = "base"
-                    profile_summary = "Fallback User"
-            else:
-                # Agent disabled
-                suggested_id = 0
-                recommended_genre = "base"
-                profile_summary = "Agent Disabled"
+                    profile_summary = "Agent Disabled"
 
             # ========================================
             # Step 3: Publish Layout Update via SSE
