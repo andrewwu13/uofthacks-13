@@ -262,12 +262,13 @@ export const RenderingEngine: React.FC<RenderingEngineProps> = ({
 let moduleCounter = 0;
 
 /**
- * Create product modules from API data with random genres
+ * Create product modules from API data with minimal genre (baseline for profile evolution)
  */
 export function createProductModules(products: ShopifyProduct[]): ProductModule[] {
   return products.map((product) => {
     moduleCounter++;
-    const genre = Math.floor(Math.random() * 6) as Genre;
+    // Start with MINIMALIST genre as neutral baseline
+    const genre = Genre.MINIMALIST;
 
     return {
       id: `product-${moduleCounter}-${product.id}`,
@@ -291,7 +292,8 @@ export function createProductBatch(
     // Cycle through products if we run out
     const productIndex = (currentCount + i) % allProducts.length;
     const product = allProducts[productIndex];
-    const genre = Math.floor(Math.random() * 6) as Genre;
+    // Start with MINIMALIST genre as neutral baseline
+    const genre = Genre.MINIMALIST;
 
     moduleCounter++;
     modules.push({
