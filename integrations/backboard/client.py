@@ -6,6 +6,16 @@ Based on official Backboard API docs: https://app.backboard.io/api
 import httpx
 import os
 from typing import Optional, Dict, Any, List
+from pathlib import Path
+
+# Load .env from project root (3 levels up: client.py -> backboard -> integrations -> root)
+from dotenv import load_dotenv
+project_root = Path(__file__).resolve().parents[2]
+env_path = project_root / ".env"
+if not env_path.exists():
+    # Try one level up if running from backend
+    env_path = project_root.parent / ".env"
+load_dotenv(env_path)
 
 
 class BackboardClient:

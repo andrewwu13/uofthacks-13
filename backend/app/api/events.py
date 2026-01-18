@@ -1,7 +1,9 @@
 import json
 import logging
+import math
+from typing import List, Dict
 from fastapi import APIRouter, HTTPException, BackgroundTasks
-from app.models.events import EventBatch, EventResponse
+from app.models.events import EventBatch, EventResponse, MotorTelemetryPayload
 from app.db.mongo_client import mongo_client
 from app.db.redis_client import redis_client
 from app.pipeline.redis_keys import RedisKeys
@@ -13,7 +15,6 @@ from app.models.reducer import ReducerOutput, ReducerContext, ReducerPayload
 import sys
 import os
 # Ensure root directory is in path for agents import
-# This is a fallback in case PYTHONPATH isn't set perfectly
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, "../../../"))
 if root_dir not in sys.path:
@@ -22,13 +23,58 @@ if root_dir not in sys.path:
 try:
     from agents.graph import run_layout_generation
 except ImportError:
-    # Handle case where agents module is not found
     logging.getLogger(__name__).warning("Could not import agents.graph. Inference will be disabled.")
     run_layout_generation = None
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def transform_motor_samples(motor: MotorTelemetryPayload) -> List[Dict]:
+    """
+    Transform frontend motor samples [[x, y], ...] into format expected by motor_analyzer.
+    
+    Calculates velocity and acceleration from position samples.
+    """
+    if not motor or not motor.samples or len(motor.samples) < 2:
+        return []
+    
+    samples = motor.samples
+    dt_sec = motor.dt / 1000.0  # Convert ms to seconds
+    result = []
+    
+    prev_vel_x, prev_vel_y = 0.0, 0.0
+    
+    for i, sample in enumerate(samples):
+        x, y = sample[0], sample[1]
+        timestamp = motor.t0 + (i * motor.dt)
+        
+        # Calculate velocity (derivative of position)
+        if i > 0:
+            prev_x, prev_y = samples[i-1][0], samples[i-1][1]
+            vel_x = (x - prev_x) / dt_sec if dt_sec > 0 else 0
+            vel_y = (y - prev_y) / dt_sec if dt_sec > 0 else 0
+        else:
+            vel_x, vel_y = 0.0, 0.0
+        
+        # Calculate acceleration (derivative of velocity)
+        if i > 0:
+            acc_x = (vel_x - prev_vel_x) / dt_sec if dt_sec > 0 else 0
+            acc_y = (vel_y - prev_vel_y) / dt_sec if dt_sec > 0 else 0
+        else:
+            acc_x, acc_y = 0.0, 0.0
+        
+        result.append({
+            "timestamp": timestamp,
+            "position": {"x": x, "y": y},
+            "velocity": {"x": vel_x, "y": vel_y},
+            "acceleration": {"x": acc_x, "y": acc_y},
+        })
+        
+        prev_vel_x, prev_vel_y = vel_x, vel_y
+    
+    return result
 
 
 async def process_telemetry_batch(batch: EventBatch):
@@ -82,18 +128,19 @@ async def process_telemetry_batch(batch: EventBatch):
         if run_layout_generation:
             try:
                 # Prepare arguments for agent graph
-                # Extract motor data if present
-                motor_data = [] # Agent graph expects list of dicts for telemetry_batch
+                # Transform motor samples to format expected by motor_analyzer
+                motor_data = []
                 if batch.motor:
-                    motor_data = [batch.motor.model_dump()]
+                    motor_data = transform_motor_samples(batch.motor)
+                    logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
                 
                 # Extract interaction events (all events in batch)
                 interaction_events = [e.model_dump() for e in batch.events]
                 
                 # Filter 'loud' module events as a subset
                 loud_events = [
-                    e for e in interaction_events 
-                    if e.get('metadata', {}).get('is_loud', False) or 
+                    e for e in interaction_events
+                    if (e.get('metadata') or {}).get('is_loud', False) or
                     "loud" in (e.get('target_id') or "").lower()
                 ]
                 

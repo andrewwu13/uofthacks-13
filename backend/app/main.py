@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import router as api_router
@@ -5,9 +6,33 @@ from app.api.events import router as events_router
 from app.sse.publisher import sse_publisher
 from app.websocket.manager import manager
 from app.websocket.handlers import handle_websocket_connection
+from app.db.mongo_client import mongo_client
+from app.db.redis_client import redis_client
 from sse_starlette.sse import EventSourceResponse
 
-app = FastAPI(title="Self-Evolving AI Storefront")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events"""
+    # Startup: Connect to databases
+    print("[Startup] Connecting to MongoDB...")
+    await mongo_client.connect()
+    print("[Startup] MongoDB connected")
+    
+    print("[Startup] Connecting to Redis...")
+    await redis_client.connect()
+    print("[Startup] Redis connected")
+    
+    yield
+    
+    # Shutdown: Disconnect from databases
+    print("[Shutdown] Disconnecting from MongoDB...")
+    await mongo_client.disconnect()
+    print("[Shutdown] Disconnecting from Redis...")
+    await redis_client.disconnect()
+
+
+app = FastAPI(title="Self-Evolving AI Storefront", lifespan=lifespan)
 
 # CORS middleware
 app.add_middleware(
@@ -45,3 +70,4 @@ async def websocket_endpoint(websocket: str, session_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
