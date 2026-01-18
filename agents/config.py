@@ -14,10 +14,10 @@ class AgentConfig(BaseModel):
     variance_auditor_interval_ms: int = 5000  # 5 second batch
     
     # Model configuration
-    context_analyst_model: str = "deepseek-v3.2"  # Fast, cheap
-    variance_auditor_model: str = "deepseek-v3.2"
-    stability_agent_model: str = "deepseek-v3.2"  # More capable
-    exploratory_agent_model: str = "deepseek-v3.2"
+    context_analyst_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"  # Cost-effective
+    variance_auditor_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
+    stability_agent_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
+    exploratory_agent_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
     
     # Thresholds
     stability_confidence_threshold: float = 0.7

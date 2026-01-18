@@ -110,82 +110,108 @@ async def process_telemetry_batch(batch: EventBatch):
         logger.info(f"Stored {len(docs)} events for session {batch.session_id}")
 
         # ========================================
-        # Step 2: Run Reducer Pipeline
+        # Step 2: Run Reducer Pipeline (with Concurrency Lock)
         # ========================================
         
-        # 1. Fetch current preferences from Redis
-        current_preferences = {}
+        # Check if agent is already running for this session
+        LOCK_KEY = f"agent_lock:{batch.session_id}"
+        # Try to acquire lock for 30 seconds (max expected duration)
+        # We use a simple SETNX equivalent: set(key, value, ex=ttl, nx=True)
+        is_locked = await redis_client.set(LOCK_KEY, "running", ex=30, nx=True)
+        
+        if not is_locked:
+            logger.info(f"Skipping agent workflow for session {batch.session_id} - Lock held by another task")
+            return
+
         try:
-            cached_state = await redis_client.get(RedisKeys.state(batch.session_id))
-            if cached_state:
-                current_preferences = json.loads(cached_state)
-        except Exception as e:
-            logger.warning(f"Failed to fetch cached state: {e}")
-
-        # 2. Run Agent Graph (Inference)
-        reducer_output = None
-        
-        if run_layout_generation:
+            # 1. Fetch current preferences from Redis
+            current_preferences = {}
             try:
-                # Prepare arguments for agent graph
-                # Transform motor samples to format expected by motor_analyzer
-                motor_data = []
-                if batch.motor:
-                    motor_data = transform_motor_samples(batch.motor)
-                    logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
-                
-                # Extract interaction events (all events in batch)
-                interaction_events = [e.model_dump() for e in batch.events]
-                
-                # Filter 'loud' module events as a subset
-                loud_events = [
-                    e for e in interaction_events
-                    if (e.get('metadata') or {}).get('is_loud', False) or
-                    "loud" in (e.get('target_id') or "").lower()
-                ]
-                
-                logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
-                
-                user_profile_dict = await run_layout_generation(
-                    session_id=batch.session_id,
-                    telemetry_batch=motor_data,
-                    interactions=interaction_events,
-                    loud_module_events=loud_events,
-                    current_preferences=current_preferences,
-                )
-                
-                # Query vector store for recommended genre
-                if user_profile_dict:
-                    from app.vector import get_recommended_genre
-                    recommended_genre = get_recommended_genre(user_profile_dict)
-                    profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
-                    logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Recommended genre: {recommended_genre}")
-                else:
-                    recommended_genre = "base"
-                    profile_summary = "New User"
-                    
+                cached_state = await redis_client.get(RedisKeys.state(batch.session_id))
+                if cached_state:
+                    current_preferences = json.loads(cached_state)
             except Exception as e:
-                logger.error(f"Agent Workflow failed: {e}")
-                recommended_genre = "base"
-                profile_summary = "Fallback User"
-        else:
-            # Agent disabled
-            recommended_genre = "base"
-            profile_summary = "Agent Disabled"
+                logger.warning(f"Failed to fetch cached state: {e}")
 
-        # ========================================
-        # Step 3: Publish Genre Recommendation via SSE
-        # ========================================
-        await sse_publisher.publish_layout_update(
-            session_id=batch.session_id,
-            layout_update={
-                "recommended_genre": recommended_genre,
-                "profile_summary": profile_summary,
-                "session_id": batch.session_id,
-            }
-        )
-        
-        logger.info(f"Published genre recommendation via SSE for session {batch.session_id}")
+            # 2. Run Agent Graph (Inference)
+            reducer_output = None
+            
+            if run_layout_generation:
+                try:
+                    # Prepare arguments for agent graph
+                    # Transform motor samples to format expected by motor_analyzer
+                    motor_data = []
+                    if batch.motor:
+                        motor_data = transform_motor_samples(batch.motor)
+                        logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
+                    
+                    # Extract interaction events (all events in batch)
+                    interaction_events = [e.model_dump() for e in batch.events]
+                    
+                    # Filter 'loud' module events as a subset
+                    loud_events = [
+                        e for e in interaction_events
+                        if (e.get('metadata') or {}).get('is_loud', False) or
+                        "loud" in (e.get('target_id') or "").lower()
+                    ]
+                    
+                    logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
+                    
+                    user_profile_dict = await run_layout_generation(
+                        session_id=batch.session_id,
+                        telemetry_batch=motor_data,
+                        interactions=interaction_events,
+                        loud_module_events=loud_events,
+                        current_preferences=current_preferences,
+                    )
+                    
+                    # Query vector store for recommended template ID
+                    if user_profile_dict:
+                        from app.vector import get_recommended_template_id, get_recommended_genre
+                        
+                        # Get Integer ID (0-35) for sampling
+                        suggested_id = get_recommended_template_id(user_profile_dict)
+                        
+                        # Keep genre for logging purposes
+                        recommended_genre = get_recommended_genre(user_profile_dict)
+                        profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
+                        
+                        logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})")
+                    else:
+                        suggested_id = 0
+                        recommended_genre = "base"
+                        profile_summary = "New User"
+                        
+                except Exception as e:
+                    logger.error(f"Agent Workflow failed: {e}")
+                    suggested_id = 0
+                    recommended_genre = "base"
+                    profile_summary = "Fallback User"
+            else:
+                # Agent disabled
+                suggested_id = 0
+                recommended_genre = "base"
+                profile_summary = "Agent Disabled"
+
+            # ========================================
+            # Step 3: Publish Layout Update via SSE
+            # ========================================
+            await sse_publisher.publish_layout_update(
+                session_id=batch.session_id,
+                layout_update={
+                    "suggested_id": suggested_id,  # The specific Integer ID (0-35)
+                    "recommended_genre": recommended_genre, # Legacy/Reference
+                    "profile_summary": profile_summary,
+                    "session_id": batch.session_id,
+                }
+            )
+            
+            logger.info(f"Published layout update via SSE for session {batch.session_id}")
+            
+        finally:
+            # Release lock
+            await redis_client.delete(LOCK_KEY)
+
 
         # DEBUG: Log summary
         print(f"\n=== TELEMETRY → VECTOR PIPELINE ===")

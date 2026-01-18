@@ -7,12 +7,12 @@ from integrations.backboard.client import backboard_client
 
 # Model mapping: our config names -> Backboard provider/model pairs
 MODEL_MAPPING = {
-    "gemini-2.5-flash": ("deepseek", "deepseek-v3.2"),
-    "gemini-2.5-pro": ("deepseek", "deepseek-v3.2"),
-    "gpt-4o": ("deepseek", "deepseek-v3.2"),
-    "gpt-4o-mini": ("deepseek", "deepseek-v3.2"),
-    "deepseek-v3.2": ("deepseek", "deepseek-v3.2"),
+    # Ultra-low cost models
+    "12thD/ko-Llama-3-8B-sft-v0.3": ("12thD", "12thD/ko-Llama-3-8B-sft-v0.3"),
+    "12thD/I-SOLAR-10.7B-dpo-sft-v0.2": ("12thD", "12thD/I-SOLAR-10.7B-dpo-sft-v0.2"), 
 }
+
+FALLBACK_MODEL = "12thD/I-SOLAR-10.7B-dpo-sft-v0.2"
 
 
 class ThreadManager:
@@ -58,22 +58,44 @@ class ThreadManager:
         prompt: str,
         memory_mode: str = "off",  # Argument preserved for API compatibility but ignored
     ) -> str:
-        """Run inference with specified model (Memory enforced OFF)"""
+        """Run inference with specified model (Memory enforced OFF) with fallback"""
         thread_id = await self.get_or_create_thread(session_id)
         
+        # 1. Attempt with primary model
+        try:
+            return await self._execute_inference(thread_id, model, prompt)
+        except Exception as e:
+            print(f"[ThreadManager] Primary model '{model}' failed: {e}")
+            
+            # 2. Attempt fallback if different
+            if model != FALLBACK_MODEL:
+                print(f"[ThreadManager] Retrying with fallback model '{FALLBACK_MODEL}'...")
+                try:
+                    return await self._execute_inference(thread_id, FALLBACK_MODEL, prompt)
+                except Exception as fallback_error:
+                    print(f"[ThreadManager] Fallback model failed: {fallback_error}")
+            
+            # Re-raise if all attempts fail
+            raise e
+
+    async def _execute_inference(self, thread_id: str, model: str, prompt: str) -> str:
+        """Execute single inference request"""
         # Map our model name to Backboard provider/model
-        llm_provider, model_name = MODEL_MAPPING.get(model, ("google", "gemini-2.5-flash"))
-        
-        # Run inference and get response
-        content = await self.client.run_inference(
+        # Default to using the model name as the provider if unknown, often works for generic APIs
+        if model in MODEL_MAPPING:
+            llm_provider, model_name = MODEL_MAPPING[model]
+        else:
+            # Fallback: assume provider is "12thD" for unknown models to avoid accidental high costs
+            llm_provider = "12thD" 
+            model_name = model
+
+        return await self.client.run_inference(
             thread_id=thread_id,
             prompt=prompt,
             llm_provider=llm_provider,
             model_name=model_name,
             memory="off", # FORCE OFF to prevent expensive reads
         )
-        
-        return content
 
 
 thread_manager = ThreadManager()

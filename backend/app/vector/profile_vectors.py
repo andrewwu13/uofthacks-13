@@ -177,3 +177,33 @@ def get_recommended_genre(profile_dict: dict) -> str:
     
     return "base"  # Fallback
 
+
+def get_recommended_template_id(profile_dict: dict) -> int:
+    """
+    Get the recommended integer Template ID for a user profile.
+    Searches for the best matching 'product-grid' module (Type 0).
+    
+    Args:
+        profile_dict: UserProfile dict
+        
+    Returns:
+        int: Module ID (0-35)
+    """
+    from app.vector.vector_store import search_similar_modules
+    
+    # Convert profile to vector
+    profile_vec = user_profile_to_vector(profile_dict)
+    
+    # Query vector store for similar modules (specifically product-grids which map to cards)
+    results = search_similar_modules(profile_vec, module_types=["product-grid"])
+    
+    # Get top match
+    grid_results = results.get("product-grid", [])
+    if grid_results:
+        top_result = grid_results[0]
+        # The ID is now an integer
+        return top_result.id
+    
+    # Fallback to ID 0 (Base Product Card)
+    return 0
+

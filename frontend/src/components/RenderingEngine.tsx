@@ -29,6 +29,7 @@ export interface ProductModule {
   id: string;          // Unique identifier for this module instance
   product: ShopifyProduct;  // Real product data from API
   genre: Genre;        // Visual style (0-5)
+  templateId?: number; // Integer ID (0-35) driving the style
 }
 
 interface RenderingEngineProps {
@@ -81,9 +82,17 @@ interface ProductCardProps {
   showDebugInfo: boolean;
 }
 
+import { decodeModuleId } from '../schema/types';
+
 const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugInfo }) => {
-  const { product, genre } = module;
-  const genreClass = GENRE_CLASSES[genre];
+  const { product, genre: fallbackGenre, templateId } = module;
+
+  // If templateId exists, derive genre from it. Otherwise use fallback.
+  const effectiveGenre = templateId !== undefined
+    ? decodeModuleId(templateId).genre
+    : fallbackGenre;
+
+  const genreClass = GENRE_CLASSES[effectiveGenre];
 
   const handleClick = useCallback(() => {
     if (onModuleClick) {
@@ -149,8 +158,8 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
           {product.description && (
             <p className="product-description">{product.description}</p>
           )}
-          <div 
-            className="product-price" 
+          <div
+            className="product-price"
             data-track-context="price"
             data-track-id={`${product.id}_price`}
           >
@@ -280,11 +289,13 @@ export function createProductModules(products: ShopifyProduct[]): ProductModule[
 
 /**
  * Create a batch of product modules for infinite scroll
+ * Samples templateId from the provided random pool.
  */
 export function createProductBatch(
   allProducts: ShopifyProduct[],
   currentCount: number,
-  batchSize: number = 3
+  batchSize: number = 3,
+  idPool: number[] = [0] // Default pool if not provided
 ): ProductModule[] {
   const modules: ProductModule[] = [];
 
@@ -292,14 +303,20 @@ export function createProductBatch(
     // Cycle through products if we run out
     const productIndex = (currentCount + i) % allProducts.length;
     const product = allProducts[productIndex];
-    // Start with MINIMALIST genre as neutral baseline
+
+    // Sample a Template ID from the pool
+    const randomPoolIndex = Math.floor(Math.random() * idPool.length);
+    const templateId = idPool[randomPoolIndex];
+
+    // Fallback genre (derived or default)
     const genre = Genre.MINIMALIST;
 
     moduleCounter++;
     modules.push({
       id: `product-${moduleCounter}-${product.id}-${Date.now()}-${i}`,
       product,
-      genre
+      genre,     // Kept for fallback types
+      templateId // The driver of the new style
     });
   }
 

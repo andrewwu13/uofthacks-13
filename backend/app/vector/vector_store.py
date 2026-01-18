@@ -27,10 +27,10 @@ class VectorStore:
     """
     
     def __init__(self):
-        self.vectors: Dict[str, np.ndarray] = {}
-        self.metadata: Dict[str, dict] = {}
+        self.vectors: Dict[int, np.ndarray] = {}
+        self.metadata: Dict[int, dict] = {}
     
-    def add(self, id: str, vector: FeatureVector, metadata: dict = None):
+    def add(self, id: int, vector: FeatureVector, metadata: dict = None):
         """Add a vector to the store"""
         arr = np.array(vector, dtype=np.float32)
         # Normalize for cosine similarity

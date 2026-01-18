@@ -38,7 +38,7 @@ async function sendTelemetryToBackend(batch: TelemetryBatch): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(batch),
     });
-    
+
     if (!response.ok) {
       console.warn('[Telemetry] Backend returned error:', response.status);
     }
@@ -69,11 +69,28 @@ function App() {
   const [batchCount, setBatchCount] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+  // Pool of Template IDs (Intergers 0-35)
+  // Initialize with [0,0,0,0,0,0] (All Base/ProductCard)
+  const [idPool, setIdPool] = useRef<number[]>([0, 0, 0, 0, 0, 0]).current; // Use ref for pool to persist without re-renders until applied
+
   // SSE layout updates handler
-  const handleLayoutUpdate = useCallback((layout: LayoutUpdate) => {
-    console.log('[App] Layout update received via SSE:', layout.layout_id);
-    // TODO: Apply layout changes to UI based on layout.components and layout.tokens
-    // For now, just log - actual UI updates would be applied here
+  const handleLayoutUpdate = useCallback((layout: any) => { // Using any for flexible payload
+    console.log('[App] Layout update received:', layout);
+
+    // 1. Get Suggestion
+    const suggestedId = layout.suggested_id;
+    if (typeof suggestedId === 'number') {
+
+      // 2. Update Pool (Evolutionary Step)
+      // Replace a random slot in the pool with the new suggestion
+      const replaceIndex = Math.floor(Math.random() * idPool.length);
+      const oldId = idPool[replaceIndex];
+      idPool[replaceIndex] = suggestedId;
+
+      // LOG ONLY - Do not re-render existing modules
+      console.log(`[Evolution] Replaced ID ${oldId} with ${suggestedId} at index ${replaceIndex}. New Pool:`, idPool);
+      console.log(`[Evolution] Future modules will sample from this new pool.`);
+    }
   }, []);
 
   // SSE connection for layout updates
@@ -93,10 +110,10 @@ function App() {
         sendTelemetryToBackend(batch);
       }
     });
-    
+
     setSessionId(manager.getSessionId());
     console.log('[App] Telemetry initialized:', manager.getSessionId());
-    
+
     // Cleanup on unmount
     return () => {
       manager.stop();
@@ -156,8 +173,8 @@ function App() {
     isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
 
-    // Create new product modules with random genres
-    const newModules = createProductBatch(allProducts, modules.length, 3);
+    // Create new product modules with random genres (sampled from current evolved pool)
+    const newModules = createProductBatch(allProducts, modules.length, 3, idPool);
 
     setModules(prev => [...prev, ...newModules]);
 
@@ -250,20 +267,20 @@ function App() {
         <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
           📦 {allProducts.length} products loaded • Displaying {modules.length} • Scroll for more
         </p>
-        
+
         {/* Tracking Status Indicator */}
         {sessionId && (
           <p style={{ color: '#a78bfa', fontSize: '0.75rem', marginTop: '0.25rem' }}>
             🔍 Tracking: {sessionId.slice(0, 20)}... • Batches sent: {batchCount}
           </p>
         )}
-        
+
         {/* SSE Connection Status */}
         {sessionId && (
-          <p style={{ 
-            color: sseConnected ? '#22c55e' : '#ef4444', 
-            fontSize: '0.75rem', 
-            marginTop: '0.25rem' 
+          <p style={{
+            color: sseConnected ? '#22c55e' : '#ef4444',
+            fontSize: '0.75rem',
+            marginTop: '0.25rem'
           }}>
             {sseConnected ? '🟢' : '🔴'} SSE: {sseConnected ? 'Connected' : 'Disconnected'} • Layout updates: {layoutUpdateCount}
           </p>

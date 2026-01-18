@@ -15,12 +15,41 @@ from app.vector.feature_schema import (
 )
 
 
+
+# Genre Mappings (0-5)
+GENRE_MAP = {
+    "base": 0,
+    "minimalist": 1,
+    "neobrutalist": 2,
+    "glassmorphism": 3,
+    "loud": 4,
+    "cyber": 5
+}
+
+# Type Mappings (0-5)
+# Mapping backend types to frontend schema types
+TYPE_MAP = {
+    "product-grid": 0, # Maps to PRODUCT_CARD
+    "hero": 1,
+    "banner": 2,
+    "feature-list": 3,
+    "testimonial": 4,
+    "cta": 5
+}
+
+def encode_module_id(genre: str, module_type: str) -> int:
+    """Encode genre and type into integer ID (0-35)"""
+    g_idx = GENRE_MAP.get(genre, 0)
+    t_idx = TYPE_MAP.get(module_type, 0)
+    return (g_idx * 6) + t_idx
+
+
 class ModuleMetadata(BaseModel):
     """Extended module metadata with feature vector"""
-    module_id: str
-    module_type: str  # hero, product-grid, cta, banner, etc.
-    genre: str        # minimalist, neobrutalist, glassmorphism, etc.
-    variant: str      # v1, v2, soft, bold, etc.
+    module_id: int  # Changed to Integer
+    module_type: str  
+    genre: str        
+    variant: str      
     
     # Feature vector (12 dimensions)
     feature_vector: List[float] = Field(default_factory=lambda: [0.5] * FEATURE_DIMENSIONS)
@@ -73,10 +102,10 @@ def module_to_vector(metadata: ModuleMetadata) -> FeatureVector:
 # Pre-defined module catalog with feature vectors
 MODULE_CATALOG: List[ModuleMetadata] = [
     # ========================================
-    # HERO MODULES
+    # HERO MODULES (Type 1)
     # ========================================
     ModuleMetadata(
-        module_id="hero_base_v1",
+        module_id=encode_module_id("base", "hero"),
         module_type="hero",
         genre="base",
         variant="v1",
@@ -86,7 +115,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.4,
     ),
     ModuleMetadata(
-        module_id="hero_minimalist_v1",
+        module_id=encode_module_id("minimalist", "hero"),
         module_type="hero",
         genre="minimalist",
         variant="v1",
@@ -96,7 +125,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.2,
     ),
     ModuleMetadata(
-        module_id="hero_neobrutalist_v1",
+        module_id=encode_module_id("neobrutalist", "hero"),
         module_type="hero",
         genre="neobrutalist",
         variant="v1",
@@ -106,7 +135,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.6,
     ),
     ModuleMetadata(
-        module_id="hero_glassmorphism_v1",
+        module_id=encode_module_id("glassmorphism", "hero"),
         module_type="hero",
         genre="glassmorphism",
         variant="v1",
@@ -116,7 +145,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.7,
     ),
     ModuleMetadata(
-        module_id="hero_loud_v1",
+        module_id=encode_module_id("loud", "hero"),
         module_type="hero",
         genre="loud",
         variant="v1",
@@ -126,7 +155,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.9,
     ),
     ModuleMetadata(
-        module_id="hero_cyber_v1",
+        module_id=encode_module_id("cyber", "hero"),
         module_type="hero",
         genre="cyber",
         variant="v1",
@@ -137,10 +166,10 @@ MODULE_CATALOG: List[ModuleMetadata] = [
     ),
     
     # ========================================
-    # PRODUCT GRID MODULES
+    # PRODUCT GRID MODULES (Type 0 - Maps to ProductCard in Frontend)
     # ========================================
     ModuleMetadata(
-        module_id="grid_base_v1",
+        module_id=encode_module_id("base", "product-grid"),
         module_type="product-grid",
         genre="base",
         variant="v1",
@@ -150,7 +179,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.5,
     ),
     ModuleMetadata(
-        module_id="grid_minimalist_v1",
+        module_id=encode_module_id("minimalist", "product-grid"),
         module_type="product-grid",
         genre="minimalist",
         variant="v1",
@@ -160,7 +189,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.2,
     ),
     ModuleMetadata(
-        module_id="grid_neobrutalist_v1",
+        module_id=encode_module_id("neobrutalist", "product-grid"),
         module_type="product-grid",
         genre="neobrutalist",
         variant="v1",
@@ -170,7 +199,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.5,
     ),
     ModuleMetadata(
-        module_id="grid_glassmorphism_v1",
+        module_id=encode_module_id("glassmorphism", "product-grid"),
         module_type="product-grid",
         genre="glassmorphism",
         variant="v1",
@@ -181,10 +210,10 @@ MODULE_CATALOG: List[ModuleMetadata] = [
     ),
     
     # ========================================
-    # CTA MODULES  
+    # CTA MODULES (Type 5)
     # ========================================
     ModuleMetadata(
-        module_id="cta_base_v1",
+        module_id=encode_module_id("base", "cta"),
         module_type="cta",
         genre="base",
         variant="v1",
@@ -194,7 +223,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.5,
     ),
     ModuleMetadata(
-        module_id="cta_minimalist_v1",
+        module_id=encode_module_id("minimalist", "cta"),
         module_type="cta",
         genre="minimalist",
         variant="v1",
@@ -204,7 +233,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.3,
     ),
     ModuleMetadata(
-        module_id="cta_loud_v1",
+        module_id=encode_module_id("loud", "cta"),
         module_type="cta",
         genre="loud",
         variant="v1",
@@ -215,10 +244,10 @@ MODULE_CATALOG: List[ModuleMetadata] = [
     ),
     
     # ========================================
-    # BANNER MODULES
+    # BANNER MODULES (Type 2)
     # ========================================
     ModuleMetadata(
-        module_id="banner_base_v1",
+        module_id=encode_module_id("base", "banner"),
         module_type="banner",
         genre="base",
         variant="v1",
@@ -228,7 +257,7 @@ MODULE_CATALOG: List[ModuleMetadata] = [
         interactivity=0.3,
     ),
     ModuleMetadata(
-        module_id="banner_loud_v1",
+        module_id=encode_module_id("loud", "banner"),
         module_type="banner",
         genre="loud",
         variant="v1",
@@ -239,17 +268,18 @@ MODULE_CATALOG: List[ModuleMetadata] = [
     ),
 ]
 
+
 # Pre-compute all module vectors
 def initialize_module_vectors():
     """Compute and store vectors for all modules"""
     for module in MODULE_CATALOG:
         module.compute_vector()
+    
+    from app.vector.vector_store import vector_store
+    print(f"[ModuleVectors] Catalog initialized with {len(MODULE_CATALOG)} modules")
 
-# Initialize on import
-initialize_module_vectors()
 
-
-def get_module_by_id(module_id: str) -> Optional[ModuleMetadata]:
+def get_module_by_id(module_id: int) -> Optional[ModuleMetadata]:
     """Get module metadata by ID"""
     for module in MODULE_CATALOG:
         if module.module_id == module_id:
@@ -260,3 +290,4 @@ def get_module_by_id(module_id: str) -> Optional[ModuleMetadata]:
 def get_modules_by_type(module_type: str) -> List[ModuleMetadata]:
     """Get all modules of a specific type"""
     return [m for m in MODULE_CATALOG if m.module_type == module_type]
+

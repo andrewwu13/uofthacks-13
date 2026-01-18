@@ -110,10 +110,14 @@ class ProfileSynthesizer:
         }}
         """
         
+        # Use configured model for synthesis
+        from agents.config import agent_config
+        model = agent_config.context_analyst_model
+
         try:
             response = await thread_manager.run_with_model(
                 session_id=session_id,
-                model="deepseek-v3.2",  # Fast model for synthesis
+                model=model,
                 prompt=prompt,
             )
             
@@ -121,7 +125,17 @@ class ProfileSynthesizer:
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(0)
-                data = json.loads(json_str)
+                try:
+                    data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    # Fallback for single-quoted Python dicts often returned by weaker models
+                    import ast
+                    try:
+                        data = ast.literal_eval(json_str)
+                    except Exception as ast_e:
+                        print(f"AST parsing failed: {ast_e}")
+                        raise ValueError("JSON parsing failed")
+                        
                 return InferredProfile(**data)
             else:
                 print(f"Warning: No JSON found in synthesis response")

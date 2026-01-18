@@ -112,8 +112,8 @@ class BackboardClient:
         self,
         thread_id: str,
         content: str,
-        llm_provider: str = "openai",
-        model_name: str = "gpt-4o",
+        llm_provider: str = "12thD",
+        model_name: str = "12thD/ko-Llama-3-8B-sft-v0.3",
         memory: str = "Auto",
         stream: bool = False,
     ) -> dict:
@@ -140,8 +140,8 @@ class BackboardClient:
         self,
         thread_id: str,
         prompt: str,
-        llm_provider: str = "google",
-        model_name: str = "gemini-2.0-flash",
+        llm_provider: str = "12thD",
+        model_name: str = "12thD/ko-Llama-3-8B-sft-v0.3",
         memory: str = "Auto",
     ) -> str:
         """Run inference on thread with specified model and return content"""
