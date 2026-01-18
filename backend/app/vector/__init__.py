@@ -29,6 +29,7 @@ from app.vector.profile_vectors import (
     traits_to_vector,
     user_profile_to_vector,
     get_recommended_genre,
+    get_recommended_template_id,
 )
 
 from app.vector.vector_store import (
@@ -60,6 +61,7 @@ __all__ = [
     "traits_to_vector",
     "user_profile_to_vector",
     "get_recommended_genre",
+    "get_recommended_template_id",
     # Store
     "VectorStore",
     "SearchResult",

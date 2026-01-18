@@ -69,9 +69,10 @@ function App() {
   const [batchCount, setBatchCount] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Pool of Template IDs (Intergers 0-35)
+  // Pool of Template IDs (Integers 0-35)
   // Initialize with [0,0,0,0,0,0] (All Base/ProductCard)
-  const [idPool, setIdPool] = useRef<number[]>([0, 0, 0, 0, 0, 0]).current; // Use ref for pool to persist without re-renders until applied
+  const idPoolRef = useRef<number[]>([0, 0, 0, 0, 0, 0]); // Use ref for pool to persist without re-renders
+  const idPool = idPoolRef.current;
 
   // SSE layout updates handler
   const handleLayoutUpdate = useCallback((layout: any) => { // Using any for flexible payload
@@ -176,7 +177,18 @@ function App() {
     // Create new product modules with random genres (sampled from current evolved pool)
     const newModules = createProductBatch(allProducts, modules.length, 3, idPool);
 
-    setModules(prev => [...prev, ...newModules]);
+    // Log the current module IDs being added
+    const newTemplateIds = newModules.map(m => m.templateId ?? 'none');
+    console.log('[Modules] Adding 3 new modules with template IDs:', newTemplateIds);
+    console.log('[Modules] Current ID Pool:', [...idPool]);
+
+    setModules(prev => {
+      const updated = [...prev, ...newModules];
+      // Log all current module template IDs
+      const allTemplateIds = updated.map(m => m.templateId ?? 0);
+      console.log('[Modules] All displayed template IDs:', allTemplateIds);
+      return updated;
+    });
 
     // Small delay before allowing next load
     setTimeout(() => {

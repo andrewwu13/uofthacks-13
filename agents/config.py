@@ -13,11 +13,12 @@ class AgentConfig(BaseModel):
     context_analyst_interval_ms: int = 5000  # 5 second batch
     variance_auditor_interval_ms: int = 5000  # 5 second batch
     
-    # Model configuration
-    context_analyst_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"  # Cost-effective
-    variance_auditor_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
-    stability_agent_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
-    exploratory_agent_model: str = "12thD/ko-Llama-3-8B-sft-v0.3"
+    # Model configuration - use Gemini 2.5 Flash via Google on Backboard
+    # Valid providers: cohere, anthropic, openrouter, aws-bedrock, openai, cerebras, google, xai, featherless
+    context_analyst_model: str = "gemini-2.5-flash"  # Cost-effective
+    variance_auditor_model: str = "gemini-2.5-flash"
+    stability_agent_model: str = "gemini-2.5-flash"
+    exploratory_agent_model: str = "gemini-2.5-flash"
     
     # Thresholds
     stability_confidence_threshold: float = 0.7

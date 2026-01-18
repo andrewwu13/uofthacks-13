@@ -217,9 +217,10 @@ async def process_telemetry_batch(batch: EventBatch):
         print(f"\n=== TELEMETRY → VECTOR PIPELINE ===")
         print(f"Session: {batch.session_id}")
         print(f"Events: {len(docs)}")
+        print(f"Suggested Module ID: {suggested_id}")  # The 0-35 integer ID
         print(f"Recommended Genre: {recommended_genre}")
         print(f"Profile: {profile_summary}")
-        print(f"===================================\n")
+        print(f"===================================")
         
     except Exception as e:
         logger.error(f"Error processing telemetry batch: {e}")

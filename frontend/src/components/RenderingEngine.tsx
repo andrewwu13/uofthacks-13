@@ -96,13 +96,13 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
 
   const handleClick = useCallback(() => {
     if (onModuleClick) {
-      onModuleClick(product, genre);
+      onModuleClick(product, effectiveGenre);
     }
-  }, [product, genre, onModuleClick]);
+  }, [product, effectiveGenre, onModuleClick]);
 
   // Get button text based on genre
   const getButtonText = () => {
-    switch (genre) {
+    switch (effectiveGenre) {
       case Genre.NEOBRUTALIST: return 'BUY NOW';
       case Genre.LOUD: return 'ADD TO CART 🔥';
       case Genre.CYBER: return '>> ACQUIRE';
@@ -113,9 +113,9 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
 
   // Get badge based on genre
   const getBadge = () => {
-    if (genre === Genre.LOUD) return { text: 'HOT', show: true };
-    if (genre === Genre.NEOBRUTALIST) return { text: 'NEW', show: true };
-    if (genre === Genre.CYBER) return { text: 'LIVE', show: true };
+    if (effectiveGenre === Genre.LOUD) return { text: 'HOT', show: true };
+    if (effectiveGenre === Genre.NEOBRUTALIST) return { text: 'NEW', show: true };
+    if (effectiveGenre === Genre.CYBER) return { text: 'LIVE', show: true };
     return { text: '', show: false };
   };
 
@@ -129,9 +129,9 @@ const ProductCard = memo<ProductCardProps>(({ module, onModuleClick, showDebugIn
       data-module-id={module.id}
       data-track-id={`product_${product.id}`}
     >
-      {showDebugInfo && <DebugOverlay product={product} genre={genre} />}
+      {showDebugInfo && <DebugOverlay product={product} genre={effectiveGenre} />}
 
-      <div className={`module-card module-product-card ${genreClass}`} data-genre={GENRE_NAMES[genre]}>
+      <div className={`module-card module-product-card ${genreClass}`} data-genre={GENRE_NAMES[effectiveGenre]}>
         {/* Badge */}
         {badge.show && (
           <div className="module-badge">{badge.text}</div>

@@ -28,12 +28,32 @@ class RedisClient:
         """Get value by key"""
         return await self.client.get(key)
     
-    async def set(self, key: str, value: str, ttl: int = None):
-        """Set value with optional TTL"""
-        if ttl:
-            await self.client.setex(key, ttl, value)
+    async def set(self, key: str, value: str, ttl: int = None, ex: int = None, nx: bool = False):
+        """
+        Set value with optional TTL and atomic lock support.
+        
+        Args:
+            key: Redis key
+            value: Value to set
+            ttl: Time-to-live in seconds (legacy param, use `ex` instead)
+            ex: Expiry time in seconds (standard redis param)
+            nx: Only set if key does not exist (for distributed locking)
+            
+        Returns:
+            bool: True if set succeeded, False if nx=True and key already exists
+        """
+        expiry = ex or ttl  # Prefer ex, fallback to ttl
+        
+        if nx:
+            # Use SET with NX for atomic lock acquisition
+            result = await self.client.set(key, value, ex=expiry, nx=True)
+            return result is not None  # Returns None if key exists
+        elif expiry:
+            await self.client.setex(key, expiry, value)
+            return True
         else:
             await self.client.set(key, value)
+            return True
     
     async def delete(self, key: str):
         """Delete key"""

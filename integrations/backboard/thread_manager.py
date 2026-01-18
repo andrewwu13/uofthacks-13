@@ -6,13 +6,18 @@ from integrations.backboard.client import backboard_client
 
 
 # Model mapping: our config names -> Backboard provider/model pairs
+# Valid Backboard providers: cohere, anthropic, openrouter, aws-bedrock, openai, cerebras, google, xai, featherless
 MODEL_MAPPING = {
-    # Ultra-low cost models
-    "12thD/ko-Llama-3-8B-sft-v0.3": ("12thD", "12thD/ko-Llama-3-8B-sft-v0.3"),
-    "12thD/I-SOLAR-10.7B-dpo-sft-v0.2": ("12thD", "12thD/I-SOLAR-10.7B-dpo-sft-v0.2"), 
+    # DeepSeek models via OpenRouter
+    "deepseek/deepseek-v3.2": ("openrouter", "deepseek/deepseek-v3.2"),
+    "deepseek/deepseek-chat": ("openrouter", "deepseek/deepseek-chat"),
+    "deepseek/deepseek-r1": ("openrouter", "deepseek/deepseek-r1"),
+    # Google models
+    "gemini-2.5-flash": ("google", "gemini-2.5-flash"),
+    "gemini-2.5-pro": ("google", "gemini-2.5-pro"),
 }
 
-FALLBACK_MODEL = "12thD/I-SOLAR-10.7B-dpo-sft-v0.2"
+FALLBACK_MODEL = "gemini-2.5-flash"
 
 
 class ThreadManager:
@@ -85,8 +90,8 @@ class ThreadManager:
         if model in MODEL_MAPPING:
             llm_provider, model_name = MODEL_MAPPING[model]
         else:
-            # Fallback: assume provider is "12thD" for unknown models to avoid accidental high costs
-            llm_provider = "12thD" 
+            # Fallback: use OpenRouter provider for unknown models
+            llm_provider = "openrouter" 
             model_name = model
 
         return await self.client.run_inference(

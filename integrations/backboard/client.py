@@ -29,6 +29,14 @@ class BackboardClient:
         self.base_url = "https://app.backboard.io/api"
         self.client = httpx.AsyncClient(timeout=60.0)
         self._assistant_id: Optional[str] = None
+        
+        # Debug: Print API key info on initialization
+        if self.api_key:
+            masked_key = self.api_key[:8] + "..." + self.api_key[-4:] if len(self.api_key) > 12 else "***"
+            print(f"[Backboard] Initialized with API key: {masked_key}")
+            print(f"[Backboard] Base URL: {self.base_url}")
+        else:
+            print("[Backboard] WARNING: No API key found! Set BACKBOARD_API_KEY env var.")
     
     @property
     def headers(self) -> dict:
@@ -112,8 +120,8 @@ class BackboardClient:
         self,
         thread_id: str,
         content: str,
-        llm_provider: str = "12thD",
-        model_name: str = "12thD/ko-Llama-3-8B-sft-v0.3",
+        llm_provider: str = "openrouter",
+        model_name: str = "deepseek/deepseek-v3.2",
         memory: str = "Auto",
         stream: bool = False,
     ) -> dict:
@@ -128,6 +136,9 @@ class BackboardClient:
             "send_to_llm": "true",
         }
         
+        # Debug: Print the LLM request details
+        print(f"[Backboard] LLM Request: provider={llm_provider}, model={model_name}")
+        
         response = await self.client.post(
             f"{self.base_url}/threads/{thread_id}/messages",
             headers=self.headers,
@@ -140,8 +151,8 @@ class BackboardClient:
         self,
         thread_id: str,
         prompt: str,
-        llm_provider: str = "12thD",
-        model_name: str = "12thD/ko-Llama-3-8B-sft-v0.3",
+        llm_provider: str = "openrouter",
+        model_name: str = "deepseek/deepseek-v3.2",
         memory: str = "Auto",
     ) -> str:
         """Run inference on thread with specified model and return content"""
