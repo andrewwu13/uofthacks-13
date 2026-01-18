@@ -49,8 +49,12 @@ def motor_state_node(state: AgentState) -> dict:
     Process motor state using pure Python (Stream 1).
     Zero API cost - runs continuously at ~100ms intervals.
     """
+    print("Agent Motor State working...")
     telemetry = state.get("telemetry_batch", [])
     result = motor_state_stream.process(telemetry)
+    
+    print(f"Agent Motor State raw response: {result}")
+    print(f"Current Sentiment (Motor): {result['state']}")
     
     return {
         "motor_state": result["state"],
@@ -65,6 +69,7 @@ async def context_analysis_node(state: AgentState) -> dict:
     Uses Backboard.io for stateful thread management.
     Runs on 5-second batch intervals.
     """
+    print("Agent Context Analysis working...")
     session_id = state.get("session_id", "")
     motor_state = {
         "state": state.get("motor_state", "idle"),
@@ -80,6 +85,10 @@ async def context_analysis_node(state: AgentState) -> dict:
         current_preferences=current_preferences,
     )
     
+    print(f"Agent Context Analysis raw response: {result}")
+    if "insights" in result:
+        print(f"Current Sentiment (Context Insights): {result['insights']}")
+    
     return {"context_analysis": result}
 
 
@@ -89,11 +98,13 @@ async def variance_audit_node(state: AgentState) -> dict:
     Uses Backboard.io for stateful thread management.
     Analyzes engagement with "loud" A/B testing modules.
     """
+    print("Agent Variance Audit working...")
     session_id = state.get("session_id", "")
     loud_events = state.get("loud_module_events", [])
     
     # Skip if no loud module events
     if not loud_events:
+        print("Agent Variance Audit raw response: Skipped (no events)")
         return {"variance_audit": {"active": False, "signals": []}}
     
     baseline = {
@@ -107,6 +118,8 @@ async def variance_audit_node(state: AgentState) -> dict:
         baseline_engagement=baseline,
     )
     
+    print(f"Agent Variance Audit raw response: {result}")
+    
     return {"variance_audit": result}
 
 
@@ -115,6 +128,7 @@ def preference_reduction_node(state: AgentState) -> dict:
     Map-Reduce: Combine outputs from all three streams.
     Updates preference weights based on aggregated signals.
     """
+    print("Agent Preference Reduction working...")
     motor_state = {
         "state": state.get("motor_state", "idle"),
         "confidence": state.get("motor_confidence", 0.0),
@@ -130,6 +144,8 @@ def preference_reduction_node(state: AgentState) -> dict:
         current_preferences=current_preferences,
     )
     
+    print(f"Agent Preference Reduction raw response: {updated}")
+    
     return {"updated_preferences": updated}
 
 
@@ -138,6 +154,7 @@ async def stability_generation_node(state: AgentState) -> dict:
     Stability Agent: Generate conservative, validated layout.
     Uses Backboard.io for stateful thread management.
     """
+    print("Agent Stability Generation working...")
     session_id = state.get("session_id", "")
     preferences = state.get("updated_preferences", {})
     
@@ -150,6 +167,8 @@ async def stability_generation_node(state: AgentState) -> dict:
         page_type="home",
     )
     
+    print(f"Agent Stability Generation raw response: {result}")
+    
     return {"stability_proposal": result}
 
 
@@ -158,6 +177,7 @@ async def exploratory_generation_node(state: AgentState) -> dict:
     Exploratory Agent: Generate novel layout with A/B testing modules.
     Uses Backboard.io for stateful thread management.
     """
+    print("Agent Exploratory Generation working...")
     session_id = state.get("session_id", "")
     preferences = state.get("updated_preferences", {})
     
@@ -175,6 +195,8 @@ async def exploratory_generation_node(state: AgentState) -> dict:
         page_type="home",
     )
     
+    print(f"Agent Exploratory Generation raw response: {result}")
+    
     return {"exploratory_proposal": result}
 
 
@@ -183,6 +205,7 @@ async def profile_synthesis_node(state: AgentState) -> dict:
     Synthesize User Profile from stability and exploratory proposals.
     Uses 80/20 weighting to produce a vectorizable JSON.
     """
+    print("Agent Profile Synthesis working...")
     session_id = state.get("session_id", "default_session")
     stability = state.get("stability_proposal", {})
     exploratory = state.get("exploratory_proposal", {})
@@ -198,6 +221,8 @@ async def profile_synthesis_node(state: AgentState) -> dict:
         motor_confidence=motor_confidence,
         context_analysis=context_analysis,
     )
+    
+    print(f"Agent Profile Synthesis raw response: {user_profile}")
     
     return {"user_profile": user_profile}
 
