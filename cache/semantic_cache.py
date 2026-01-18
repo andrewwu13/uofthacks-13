@@ -136,6 +136,8 @@ class SemanticCache:
                         json.dumps(cache_entry),
                         ttl=self.ttl
                     )
+                    # Track the key so we can find it later
+                    await self._add_cache_key(cache_key)
                     logger.debug(f"Cached result in Redis: {cache_key}")
                 except Exception as e:
                     logger.warning(f"Redis cache write failed: {e}")

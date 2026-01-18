@@ -60,6 +60,18 @@ class Settings(BaseSettings):
     # Kafka/RedPanda
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
     
+    # =========================================
+    # Google API (for Gemini embeddings)
+    # =========================================
+    GOOGLE_API_KEY: str = ""
+    
+    # =========================================
+    # Semantic Cache Configuration
+    # =========================================
+    SEMANTIC_CACHE_ENABLED: bool = True
+    SEMANTIC_CACHE_SIMILARITY_THRESHOLD: float = 0.92
+    SEMANTIC_CACHE_TTL_SECONDS: int = 3600  # 1 hour
+    
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
