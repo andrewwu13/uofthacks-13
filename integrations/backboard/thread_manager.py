@@ -7,10 +7,11 @@ from integrations.backboard.client import backboard_client
 
 # Model mapping: our config names -> Backboard provider/model pairs
 MODEL_MAPPING = {
-    "gemini-2.5-flash": ("google", "gemini-2.5-flash"),
-    "gemini-2.5-pro": ("google", "gemini-2.5-pro"),
-    "gpt-4o": ("openai", "gpt-4o"),
-    "gpt-4o-mini": ("openai", "gpt-4o-mini"),
+    "gemini-2.5-flash": ("deepseek", "deepseek-v3.2"),
+    "gemini-2.5-pro": ("deepseek", "deepseek-v3.2"),
+    "gpt-4o": ("deepseek", "deepseek-v3.2"),
+    "gpt-4o-mini": ("deepseek", "deepseek-v3.2"),
+    "deepseek-v3.2": ("deepseek", "deepseek-v3.2"),
 }
 
 
@@ -39,14 +40,14 @@ class ThreadManager:
         session_id: str,
         preferences: dict,
     ):
-        """Add user preferences as context early in thread (uses memory)"""
+        """Add user preferences as context early in thread (memory disabled to save costs)"""
         thread_id = await self.get_or_create_thread(session_id)
         
-        # Add preferences as a message with memory enabled
+        # Add preferences as a message with memory DISABLED
         await self.client.add_message(
             thread_id=thread_id,
             content=f"User preferences context: {preferences}",
-            memory="Auto",
+            memory="off", # FORCE OFF to prevent expensive reads
             stream=False,
         )
     
@@ -55,9 +56,9 @@ class ThreadManager:
         session_id: str,
         model: str,
         prompt: str,
-        memory_mode: str = "off",  # Default to off to save costs on high-frequency calls
+        memory_mode: str = "off",  # Argument preserved for API compatibility but ignored
     ) -> str:
-        """Run inference with specified model"""
+        """Run inference with specified model (Memory enforced OFF)"""
         thread_id = await self.get_or_create_thread(session_id)
         
         # Map our model name to Backboard provider/model
@@ -69,7 +70,7 @@ class ThreadManager:
             prompt=prompt,
             llm_provider=llm_provider,
             model_name=model_name,
-            memory=memory_mode,
+            memory="off", # FORCE OFF to prevent expensive reads
         )
         
         return content

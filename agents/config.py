@@ -14,10 +14,10 @@ class AgentConfig(BaseModel):
     variance_auditor_interval_ms: int = 5000  # 5 second batch
     
     # Model configuration
-    context_analyst_model: str = "gemini-2.5-flash"  # Fast, cheap
-    variance_auditor_model: str = "gemini-2.5-flash"
-    stability_agent_model: str = "gemini-2.5-pro"  # More capable
-    exploratory_agent_model: str = "gemini-2.5-pro"
+    context_analyst_model: str = "deepseek-v3.2"  # Fast, cheap
+    variance_auditor_model: str = "deepseek-v3.2"
+    stability_agent_model: str = "deepseek-v3.2"  # More capable
+    exploratory_agent_model: str = "deepseek-v3.2"
     
     # Thresholds
     stability_confidence_threshold: float = 0.7
