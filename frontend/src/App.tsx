@@ -113,9 +113,9 @@ function App() {
     setSessionId(manager.getSessionId());
     console.log('[App] Telemetry initialized:', manager.getSessionId());
 
-    // Cleanup on unmount
+    // Cleanup on unmount - keep manager running to avoid "EventBuffer Stopped" errors
     return () => {
-      manager.stop();
+      // Don't call manager.stop() to prevent black screen issues
     };
   }, []);
 
@@ -268,59 +268,21 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Header */}
-      <header className="app-header">
-        <h1>GEN UI: Self-Evolving Storefront</h1>
-        <p>
-          Real Products from Shopify • 6 Visual Genres • Infinite Scroll
-        </p>
-        <p style={{ color: '#10b981', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-          📦 {allProducts.length} products loaded • Displaying {modules.length} • Scroll for more
-        </p>
-
-        {/* Tracking Status Indicator */}
-        {sessionId && (
-          <p style={{ color: '#a78bfa', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            🔍 Tracking: {sessionId.slice(0, 20)}... • Batches sent: {batchCount}
-          </p>
-        )}
-
-        {/* SSE Connection Status */}
-        {sessionId && (
-          <p style={{
-            color: sseConnected ? '#22c55e' : '#ef4444',
-            fontSize: '0.75rem',
-            marginTop: '0.25rem'
-          }}>
-            {sseConnected ? '🟢' : '🔴'} SSE: {sseConnected ? 'Connected' : 'Disconnected'} • Layout updates: {layoutUpdateCount}
-          </p>
-        )}
-
-        {/* Control Buttons */}
-        <div className="app-controls">
-          <button onClick={handleReset}>🔄 Reset (6)</button>
-          <button onClick={handleGenreShuffle}>🎨 Shuffle Genres</button>
-          <button onClick={handleGroupByGenre}>📊 Genre Showcase</button>
-        </div>
-
-        {/* Product Info Display */}
-        {lastClicked && (
-          <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1rem',
-            background: 'rgba(59, 130, 246, 0.1)',
-            borderRadius: '8px',
-            fontSize: '0.875rem',
-            display: 'inline-block',
-            textAlign: 'left'
-          }}>
-            <strong>Selected:</strong> {lastClicked.product.title}<br />
-            <span style={{ color: '#71717a' }}>
-              {GENRE_NAMES[lastClicked.genre]} • ${parseFloat(lastClicked.product.price).toFixed(2)} • {lastClicked.product.store_domain}
-            </span>
-          </div>
-        )}
-      </header>
+      {/* Minimal Tracking Bar */}
+      <div className="tracking-bar">
+        <span className="tracking-item">
+          🔍 Session: {sessionId ? sessionId.slice(0, 12) + '...' : 'initializing'}
+        </span>
+        <span className="tracking-item">
+          📊 Batches: {batchCount}
+        </span>
+        <span className={`tracking-item ${sseConnected ? 'connected' : 'disconnected'}`}>
+          {sseConnected ? '🟢' : '🔴'} SSE {sseConnected ? 'Connected' : 'Disconnected'}
+        </span>
+        <span className="tracking-item">
+          🔄 Updates: {layoutUpdateCount}
+        </span>
+      </div>
 
       {/* Rendering Engine with Infinite Scroll */}
       <RenderingEngine

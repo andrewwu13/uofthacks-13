@@ -260,6 +260,37 @@ button {
   border-color: #52525b;
 }
 
+/* Minimal Tracking Bar */
+.tracking-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tracking-bar .tracking-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tracking-bar .tracking-item.connected {
+  color: #22c55e;
+}
+
+.tracking-bar .tracking-item.disconnected {
+  color: #ef4444;
+}
+
 /* ============================================
    RENDERING ENGINE & GRID
    ============================================ */
@@ -1059,6 +1090,7 @@ button {
   color: var(--g-text-muted);
   font-size: 0.875rem;
 }
+
 /* ============================================
    NEW LAYOUT STYLES (36-Module System)
    ============================================ */
@@ -1085,7 +1117,8 @@ button {
 
 .module-btn {
   background: var(--g-accent);
-  color: var(--app-bg); /* Contrast text */
+  color: var(--app-bg);
+  /* Contrast text */
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: var(--g-radius);
@@ -1142,7 +1175,8 @@ button {
 
 /* LAYOUT 1: COMPACT (List) */
 .layout-compact {
-  grid-column: span 1; /* Or span 3 if we want full width rows */
+  grid-column: span 1;
+  /* Or span 3 if we want full width rows */
 }
 
 .module-layout-compact {
@@ -1185,15 +1219,18 @@ button {
 
 /* LAYOUT 2: FEATURED (Hero) */
 .layout-featured {
-  grid-column: span 2; /* Span 2 columns */
-  grid-row: span 2;    /* Span 2 rows */
+  grid-column: span 2;
+  /* Span 2 columns */
+  grid-row: span 2;
+  /* Span 2 rows */
 }
 
 .module-layout-featured {
   background-size: cover;
   background-position: center;
   position: relative;
-  min-height: 400px; /* Ensure height */
+  min-height: 400px;
+  /* Ensure height */
   display: flex;
   align-items: flex-end;
   /* Use ::before for overlay to generic dark/light */
@@ -1203,7 +1240,7 @@ button {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
   border-radius: var(--g-radius);
 }
 
@@ -1212,7 +1249,8 @@ button {
   z-index: 2;
   padding: 2rem;
   width: 100%;
-  color: #fff; /* Always white on overlay */
+  color: #fff;
+  /* Always white on overlay */
 }
 
 .featured-label {
@@ -1235,9 +1273,11 @@ button {
 
 /* GENRE OVERRIDES FOR FEATURED */
 .genre-minimalist.layout-featured .product-title {
-  color: #000; /* Minimalist might not have dark overlay */
+  color: #000;
+  /* Minimalist might not have dark overlay */
   /* This is tricky if image is dark. Assume minimalist images are light/studio */
 }
+
 /* Re-force overlay for minimalist to ensure readability? Or assume design system */
 
 /* LAYOUT 3: GALLERY (Visual) */
@@ -1258,7 +1298,7 @@ button {
 .gallery-hover-info {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -1287,7 +1327,8 @@ button {
 .tech-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid var(--g-border); /* Use border color */
+  border-bottom: 1px solid var(--g-border);
+  /* Use border color */
   padding-bottom: 0.5rem;
   margin-bottom: 1rem;
   opacity: 0.7;
@@ -1331,7 +1372,8 @@ button {
 
 /* LAYOUT 5: BOLD (Typography) */
 .layout-bold {
-  grid-column: span 1; /* Or 2 */
+  grid-column: span 1;
+  /* Or 2 */
 }
 
 .module-layout-bold {
@@ -1346,7 +1388,8 @@ button {
   line-height: 0.9;
   font-weight: 900;
   text-transform: uppercase;
-  word-break: break-word; /* Handle long words */
+  word-break: break-word;
+  /* Handle long words */
   margin-bottom: 1rem;
   color: transparent;
   -webkit-text-stroke: 1px var(--g-text);
@@ -1377,6 +1420,7 @@ button {
   box-shadow: 4px 4px 0 0 #000;
   border: 2px solid #000;
 }
+
 .genre-neobrutalist .module-btn:hover {
   box-shadow: 2px 2px 0 0 #000;
   transform: translate(2px, 2px);
@@ -1392,6 +1436,7 @@ button {
   border: 1px solid currentColor;
   background: transparent;
 }
+
 .genre-cyber .module-btn:hover {
   background: var(--g-accent);
   color: #000;
@@ -1402,12 +1447,14 @@ button {
   .module-grid {
     grid-template-columns: 1fr;
   }
+
   .layout-featured,
   .layout-standard,
   .layout-compact,
   .layout-gallery,
   .layout-technical,
   .layout-bold {
-    grid-column: span 1 !important; /* Force single column on mobile */
+    grid-column: span 1 !important;
+    /* Force single column on mobile */
   }
 }
