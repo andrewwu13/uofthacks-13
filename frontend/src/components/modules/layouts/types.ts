@@ -1,4 +1,4 @@
-import { ProductData, Genre } from '../../../schema/types';
+import type { ProductData, Genre } from '../../../schema/types';
 
 export interface LayoutProps {
     product: ProductData;

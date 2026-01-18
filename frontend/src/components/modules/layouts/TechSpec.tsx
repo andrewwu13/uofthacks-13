@@ -1,6 +1,6 @@
 import React from 'react';
 import { GENRE_NAMES } from '../../../schema/types';
-import { LayoutProps } from './types';
+import type { LayoutProps } from './types';
 
 export const TechSpec: React.FC<LayoutProps> = ({
     product,

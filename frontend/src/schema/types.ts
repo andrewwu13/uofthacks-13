@@ -143,6 +143,12 @@ export const LAYOUT_TYPE_NAMES: Record<LayoutType, string> = {
 };
 
 // ============================================
+// VARIATION TYPE
+// ============================================
+
+export type Variation = 0 | 1 | 2;
+
+// ============================================
 // MODULE METADATA & TAGGING
 // ============================================
 

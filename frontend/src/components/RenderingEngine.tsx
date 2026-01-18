@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useRef } from 'react';
-import { RenderingEngineProps } from '../schema/types'; // Updated import
+import type { RenderingEngineProps } from '../schema/types';
 import { getModuleConfig } from './modules/ModuleRegistry';
 
 export const RenderingEngine: React.FC<RenderingEngineProps> = ({

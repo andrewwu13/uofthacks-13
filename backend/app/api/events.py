@@ -16,7 +16,7 @@ from app.config import settings
 import sys
 import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
-cache_dir = os.path.abspath(os.path.join(current_dir, "../../../../cache"))
+cache_dir = os.path.abspath(os.path.join(current_dir, "../../../cache"))
 if cache_dir not in sys.path:
     sys.path.insert(0, cache_dir)
 

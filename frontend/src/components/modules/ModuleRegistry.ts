@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Genre as GenreType, LayoutType as LayoutTypeValue } from '../../schema/types';
 import {
     Genre,
     LayoutType,
@@ -15,7 +16,7 @@ import { FeaturedHero } from './layouts/FeaturedHero';
 import { GalleryView } from './layouts/GalleryView';
 import { TechSpec } from './layouts/TechSpec';
 import { BoldTypo } from './layouts/BoldTypo';
-import { LayoutProps } from './layouts/types';
+import type { LayoutProps } from './layouts/types';
 
 // Component Map
 const LAYOUT_COMPONENTS: Record<LayoutType, React.FC<LayoutProps>> = {
