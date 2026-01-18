@@ -290,3 +290,31 @@ def get_module_by_id(module_id: int) -> Optional[ModuleMetadata]:
         if module.module_id == module_id:
             return module
     return None
+
+
+def get_modules_by_type(module_type: str) -> List[ModuleMetadata]:
+    """
+    Get modules by layout type.
+    
+    Args:
+        module_type: Layout type (e.g., 'hero', 'product-grid', 'cta', 'standard', 'featured')
+    
+    Returns:
+        List of modules matching the layout type
+    """
+    # Map common type names to layout names
+    type_mapping = {
+        "hero": "featured",
+        "product-grid": "gallery",
+        "cta": "bold",
+        "standard": "standard",
+        "compact": "compact",
+        "featured": "featured",
+        "gallery": "gallery",
+        "technical": "technical",
+        "bold": "bold",
+    }
+    
+    layout = type_mapping.get(module_type.lower(), module_type.lower())
+    
+    return [m for m in MODULE_CATALOG if m.layout == layout]
