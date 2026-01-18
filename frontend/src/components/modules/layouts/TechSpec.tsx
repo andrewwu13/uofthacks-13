@@ -15,7 +15,7 @@ export const TechSpec: React.FC<LayoutProps> = ({
             data-genre={GENRE_NAMES[genre]}
         >
             <div className="tech-header">
-                <div className="tech-id">REF: {product.id.substring(0, 8)}</div>
+                <div className="tech-id">REF: {String(product.id).substring(0, 8)}</div>
                 <div className="tech-status">IN_STOCK</div>
             </div>
 

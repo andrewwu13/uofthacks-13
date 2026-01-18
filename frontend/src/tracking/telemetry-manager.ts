@@ -142,6 +142,9 @@ export class TelemetryManager {
       console.log('Session ID:', batch.session_id);
       console.log('Timestamp:', new Date(batch.timestamp * 1000).toISOString());
       console.log('Events:', batch.events.length);
+      if (batch.motor) {
+        console.log('Motor Samples:', batch.motor.samples.length);
+      }
       
       // Log event breakdown
       const eventTypes = batch.events.reduce((acc, e) => {
@@ -149,6 +152,11 @@ export class TelemetryManager {
         return acc;
       }, {} as Record<string, number>);
       console.log('Event Breakdown:', eventTypes);
+      
+      // Log full items for debugging if needed
+      if (batch.events.length > 0) {
+        console.dir(batch.events);
+      }
       
       console.groupEnd();
     }
