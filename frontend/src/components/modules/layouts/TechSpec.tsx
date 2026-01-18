@@ -45,6 +45,9 @@ export const TechSpec: React.FC<LayoutProps> = ({
                 onClick={(e) => {
                     e.stopPropagation();
                     onAddToCart?.();
+                    if (product.url) {
+                        window.open(product.url, '_blank');
+                    }
                 }}
             >
                 [INITIATE_ORDER]

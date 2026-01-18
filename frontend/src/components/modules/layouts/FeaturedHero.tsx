@@ -26,6 +26,9 @@ export const FeaturedHero: React.FC<LayoutProps> = ({
                         onClick={(e) => {
                             e.stopPropagation();
                             onAddToCart?.();
+                            if (product.url) {
+                                window.open(product.url, '_blank');
+                            }
                         }}
                     >
                         Shop Now

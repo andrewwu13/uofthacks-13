@@ -45,6 +45,9 @@ export const CompactList: React.FC<LayoutProps> = ({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onAddToCart?.();
+                                if (product.url) {
+                                    window.open(product.url, '_blank');
+                                }
                             }}
                         >
                             Add
