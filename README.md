@@ -1,4 +1,4 @@
-# Gen UI - Self-Evolving AI Storefront
+# Gen UI - The Self-Evolving AI Storefront
 
 A web application that continuously evolves its UI/UX based on real-time customer behavior analysis.
 
