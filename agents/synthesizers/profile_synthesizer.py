@@ -113,7 +113,7 @@ class ProfileSynthesizer:
         try:
             response = await thread_manager.run_with_model(
                 session_id=session_id,
-                model="gemini-2.5-flash",  # Fast model for synthesis
+                model="deepseek-v3.2",  # Fast model for synthesis
                 prompt=prompt,
             )
             
