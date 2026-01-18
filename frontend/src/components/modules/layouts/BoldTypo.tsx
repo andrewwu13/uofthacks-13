@@ -23,7 +23,7 @@ export const BoldTypo: React.FC<LayoutProps> = ({
             </div>
 
             <div className="bold-image-strip">
-                <img src={product.imageUrl} alt="" className="bold-image" />
+                <img src={product.imageUrl ?? undefined} alt="" className="bold-image" />
             </div>
 
             <button

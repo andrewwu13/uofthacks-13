@@ -21,7 +21,7 @@ export const TechSpec: React.FC<LayoutProps> = ({
 
             <div className="tech-grid">
                 <div className="tech-thumb">
-                    <img src={product.imageUrl} alt="" className="tech-image" />
+                    <img src={product.imageUrl ?? undefined} alt="" className="tech-image" />
                 </div>
 
                 <div className="tech-data">
