@@ -1,65 +1,165 @@
+"""
+Gen UI Backend - FastAPI Application Entry Point
+"""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sse_starlette.sse import EventSourceResponse
+import logging
+import time
+
+from app.config import settings
+from app.db.mongo_client import mongo_client
+from app.db.redis_client import redis_client
 from app.api.endpoints import router as api_router
 from app.api.events import router as events_router
 from app.sse.publisher import sse_publisher
 from app.websocket.manager import manager
 from app.websocket.handlers import handle_websocket_connection
-from app.db.mongo_client import mongo_client
-from app.db.redis_client import redis_client
-from sse_starlette.sse import EventSourceResponse
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup and shutdown events"""
-    # Startup: Connect to databases
-    print("[Startup] Connecting to MongoDB...")
-    await mongo_client.connect()
-    print("[Startup] MongoDB connected")
+    """
+    Application lifespan manager.
+    Handles startup and shutdown events for database connections.
+    """
+    # =========================================
+    # Startup
+    # =========================================
+    logger.info("Starting Gen UI Backend...")
     
-    print("[Startup] Connecting to Redis...")
-    await redis_client.connect()
-    print("[Startup] Redis connected")
+    # Connect to MongoDB
+    try:
+        await mongo_client.connect()
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        # Continue without MongoDB for graceful degradation
+    
+    # Connect to Redis
+    try:
+        await redis_client.connect()
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
     
     # Initialize vector store for module matching
-    print("[Startup] Initializing vector store...")
-    from app.vector import initialize_vector_store
-    initialize_vector_store()
+    try:
+        logger.info("Initializing vector store...")
+        from app.vector import initialize_vector_store
+        initialize_vector_store()
+    except Exception as e:
+        logger.warning(f"Failed to initialize vector store: {e}")
     
-    yield
+    logger.info("Gen UI Backend started successfully")
     
-    # Shutdown: Disconnect from databases
-    print("[Shutdown] Disconnecting from MongoDB...")
+    yield  # Application runs here
+    
+    # =========================================
+    # Shutdown
+    # =========================================
+    logger.info("Shutting down Gen UI Backend...")
+    
     await mongo_client.disconnect()
-    print("[Shutdown] Disconnecting from Redis...")
     await redis_client.disconnect()
+    
+    logger.info("Gen UI Backend shutdown complete")
 
 
-app = FastAPI(title="Self-Evolving AI Storefront", lifespan=lifespan)
+# Create FastAPI application
+app = FastAPI(
+    title="Gen UI Backend",
+    description="AI-powered self-evolving storefront backend",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# =========================================
+# Middleware
+# =========================================
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
+
+# Request timing middleware
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Add X-Process-Time header to all responses"""
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = f"{process_time:.4f}"
+    return response
+
+
+# =========================================
+# Include API Routes
+# =========================================
+
 app.include_router(api_router)
 app.include_router(events_router, prefix="/telemetry", tags=["Telemetry"])
 
-@app.get("/health")
+
+# =========================================
+# Health Check Endpoints
+# =========================================
+
+@app.get("/health", tags=["Health"])
 async def health_check():
-    return {"status": "healthy"}
+    """
+    Health check endpoint for container orchestration.
+    Returns status of all connected services.
+    """
+    mongo_health = await mongo_client.health_check()
+    redis_health = await redis_client.health_check()
+    
+    all_healthy = (
+        mongo_health.get("status") == "connected" and
+        redis_health.get("status") == "connected"
+    )
+    
+    return {
+        "status": "healthy" if all_healthy else "degraded",
+        "services": {
+            "mongodb": mongo_health,
+            "redis": redis_health,
+        }
+    }
+
+
+@app.get("/", tags=["Root"])
+async def root():
+    """Root endpoint"""
+    return {
+        "name": "Gen UI Backend",
+        "version": "1.0.0",
+        "docs": "/docs",
+    }
+
+
+# =========================================
+# SSE and WebSocket Endpoints
+# =========================================
 
 @app.get("/stream/{session_id}")
 async def stream(session_id: str):
-    # TODO: Initialize or recover persistent session state from DB here
+    """SSE stream for layout updates"""
     return EventSourceResponse(sse_publisher.subscribe(session_id))
+
 
 @app.post("/debug/publish_layout/{session_id}")
 async def debug_publish_layout(session_id: str, request: Request):
@@ -68,11 +168,30 @@ async def debug_publish_layout(session_id: str, request: Request):
     await sse_publisher.publish_layout_update(session_id, payload)
     return {"status": "published", "session_id": session_id}
 
+
 @app.websocket("/ws/{session_id}")
-async def websocket_endpoint(websocket: str, session_id: str):
+async def websocket_endpoint(websocket, session_id: str):
     await handle_websocket_connection(websocket, session_id, manager)
+
+
+# =========================================
+# Exception Handlers
+# =========================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler for unhandled errors"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+
+# =========================================
+# Run with: uvicorn app.main:app --reload
+# =========================================
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
