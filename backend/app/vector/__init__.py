@@ -27,6 +27,8 @@ from app.vector.module_vectors import (
 from app.vector.profile_vectors import (
     profile_to_vector,
     traits_to_vector,
+    user_profile_to_vector,
+    get_recommended_genre,
 )
 
 from app.vector.vector_store import (
@@ -56,6 +58,8 @@ __all__ = [
     # Profiles
     "profile_to_vector",
     "traits_to_vector",
+    "user_profile_to_vector",
+    "get_recommended_genre",
     # Store
     "VectorStore",
     "SearchResult",
