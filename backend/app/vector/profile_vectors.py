@@ -184,12 +184,16 @@ def get_recommended_template_id(profile_dict: dict) -> int:
     Get the recommended integer Template ID for a user profile.
     Searches for the best matching module from the 36-module catalog.
     
+    Uses weighted random selection from top 5 to add variety while
+    still favoring higher-scoring matches.
+    
     Args:
         profile_dict: UserProfile dict
         
     Returns:
         int: Module ID (0-35, encoding: genre*6 + layout)
     """
+    import random
     from app.vector.vector_store import search_similar_modules
     from app.vector.module_vectors import decode_module_id
     
@@ -204,14 +208,27 @@ def get_recommended_template_id(profile_dict: dict) -> int:
     recommendations = results.get("recommended", [])
     
     if recommendations:
-        # Debug: Show top 3 candidates with scores
+        # Debug: Show top 5 candidates with scores
         print(f"[Vector] Top {len(recommendations)} matches:")
-        for i, result in enumerate(recommendations[:3]):
+        for i, result in enumerate(recommendations[:5]):
             decoded = decode_module_id(result.id)
             print(f"  {i+1}. ID={result.id} ({decoded['genre']}/{decoded['layout']}) score={result.score:.4f}")
         
-        top_result = recommendations[0]
-        return top_result.id
+        # Weighted random selection from top results
+        # Convert scores to weights (shift to make all positive and avoid divide by zero)
+        scores = [r.score for r in recommendations]
+        min_score = min(scores)
+        weights = [(s - min_score + 0.1) ** 2 for s in scores]  # Square to favor higher scores
+        total_weight = sum(weights)
+        probs = [w / total_weight for w in weights]
+        
+        # Random weighted selection
+        selected = random.choices(recommendations, weights=probs, k=1)[0]
+        
+        decoded = decode_module_id(selected.id)
+        print(f"[Vector] 🎲 Selected: ID={selected.id} ({decoded['genre']}/{decoded['layout']}) from top {len(recommendations)}")
+        
+        return selected.id
     
     # Fallback to ID 0 (Base Standard)
     return 0
