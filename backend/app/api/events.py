@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 async def process_telemetry_batch(batch: EventBatch):
     """
     Process telemetry batch in background:
-    1. Save raw events to MongoDB 'telemetry' collection
-    2. Save motor data to 'motor_telemetry' collection
+    1. Save raw events to MongoDB 'telemetry' collection (if connected)
+    2. Save motor data to 'motor_telemetry' collection (if connected)
     3. Run reducer pipeline to generate layout
     4. Publish layout update via SSE
     """
     try:
         # ========================================
-        # Step 1: Save events to MongoDB
+        # Step 1: Save events to MongoDB (if connected)
         # ========================================
         docs = []
         for event in batch.events:
@@ -31,17 +31,21 @@ async def process_telemetry_batch(batch: EventBatch):
             doc["batch_timestamp"] = batch.timestamp
             docs.append(doc)
             
-        if docs:
-            await mongo_client.telemetry.insert_many(docs)
-            
-        # Handle motor data if present
-        if batch.motor:
-            motor_doc = batch.motor.model_dump()
-            motor_doc["session_id"] = batch.session_id 
-            motor_doc["batch_timestamp"] = batch.timestamp
-            await mongo_client.db.motor_telemetry.insert_one(motor_doc)
+        # Only save to MongoDB if connected
+        if mongo_client.db is not None:
+            if docs:
+                await mongo_client.telemetry.insert_many(docs)
+                
+            # Handle motor data if present
+            if batch.motor:
+                motor_doc = batch.motor.model_dump()
+                motor_doc["session_id"] = batch.session_id 
+                motor_doc["batch_timestamp"] = batch.timestamp
+                await mongo_client.db.motor_telemetry.insert_one(motor_doc)
 
-        logger.info(f"Stored {len(docs)} events for session {batch.session_id}")
+            logger.info(f"Stored {len(docs)} events for session {batch.session_id}")
+        else:
+            logger.warning(f"MongoDB not connected, skipping storage for session {batch.session_id}")
 
         # ========================================
         # Step 2: Run Reducer Pipeline
