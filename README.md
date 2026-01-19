@@ -2,6 +2,36 @@
 
 A web application that continuously evolves its UI/UX based on real-time customer behavior analysis.
 
+## Contributions Guideline
+
+We welcome contributions! Please follow these steps to contribute:
+
+1.  **Fork the Repository**: Create a fork of this repository to your own GitHub account.
+2.  **Clone Locally**: Clone your fork to your local machine.
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/uofthacks-2026.git
+    cd uofthacks-2026
+    ```
+3.  **Create a Branch**: Create a new branch for your feature or fix.
+    ```bash
+    git checkout -b feature/amazing-feature
+    # or
+    git checkout -b fix/critical-bug
+    ```
+4.  **Make Changes**: Implement your changes. Ensure you follow the project's coding style and structure.
+5.  **Run Tests**: Verify that your changes don't break existing functionality.
+    - See [Running Tests](#-running-tests) section below.
+6.  **Commit Changes**: Commit your changes with clear, descriptive messages.
+    ```bash
+    git commit -m "feat: Add new tracking module"
+    ```
+7.  **Push and PR**: Push to your fork and submit a Pull Request to the `main` branch of this repository.
+
+### Code Style
+- **Frontend**: Follow React best practices. Use functional components and hooks.
+- **Backend**: Follow PEP 8 guidelines for Python code.
+- **Commits**: improved conventional commits are preferred (e.g., `feat:`, `fix:`, `docs:`, `chore:`).
+
 ## 🚀 Quick Start
 
 ### Option 1: Docker (Recommended)
