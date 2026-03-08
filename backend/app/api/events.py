@@ -341,6 +341,27 @@ async def process_telemetry_batch(batch: EventBatch):
                                     logger.warning(
                                         f"Failed to store result in semantic cache: {e}"
                                     )
+
+                            # ========================================
+                            # Step 2.6: Persist Analysis for Long-Term Session Memory
+                            # ========================================
+                            try:
+                                import datetime
+                                snapshot = {
+                                    "session_id": batch.session_id,
+                                    "timestamp": datetime.datetime.now(datetime.timezone.utc),
+                                    "vibe_summary": profile_summary,
+                                    "constraints_summary": {
+                                        "hard": {"genre_weights": {recommended_genre: 1.0}},
+                                        "vibe": profile_summary
+                                    },
+                                    "behavioral_summary": user_profile_dict.get("behavioral_description", ""),
+                                    "suggested_id": suggested_id
+                                }
+                                await mongo_client.db.reducer_snapshots.insert_one(snapshot)
+                                logger.info(f"Persisted analysis snapshot for session {batch.session_id}")
+                            except Exception as e:
+                                logger.error(f"Failed to persist analysis snapshot: {e}")
                         else:
                             suggested_id = 0
                             recommended_genre = "base"

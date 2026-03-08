@@ -20,7 +20,10 @@ async def user_profile_to_vector_async(profile_dict: dict) -> FeatureVector:
     """
     from app.config import settings
     
-    summary = profile_dict.get("vibe_summary", "New user seeking a standard, clean experience.")
+    if isinstance(profile_dict, str):
+        summary = profile_dict
+    else:
+        summary = profile_dict.get("vibe_summary", "New user seeking a standard, clean experience.")
     
     # Check cache first
     summary_hash = hashlib.md5(summary.encode()).hexdigest()

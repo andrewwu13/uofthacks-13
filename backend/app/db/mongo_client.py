@@ -150,6 +150,19 @@ class MongoClient:
                 name="layouts_session_page_idx",
             )
 
+            # Reducer snapshots collection (Intra-session memory)
+            await self.db.reducer_snapshots.create_index(
+                "timestamp",
+                expireAfterSeconds=24 * 60 * 60,  # 24 hours TTL
+                background=True,
+                name="reducer_snapshots_ttl_idx",
+            )
+            await self.db.reducer_snapshots.create_index(
+                "session_id",
+                background=True,
+                name="reducer_snapshots_session_idx",
+            )
+
             logger.info("MongoDB indexes ensured")
 
         except Exception as e:

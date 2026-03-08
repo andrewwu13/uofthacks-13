@@ -77,65 +77,75 @@ class ModuleMetadata(BaseModel):
     feature_vector: List[float] = Field(default_factory=lambda: [0.0] * FEATURE_DIMENSIONS)
 
 
-# Semantic Descriptions per Genre/Layout (Short, Punchy Vibes)
+def module_to_text(module: ModuleMetadata) -> str:
+    """
+    Convert module metadata to highly discriminating searchable string.
+    Removes the genre name itself to prevent keyword-bias matching,
+    forcing similarity to rely on visual/mechanical trait overlapping.
+    """
+    tags_str = ", ".join(module.tags)
+    return f"{module.description} Keywords: {tags_str}"
+
+
+# Semantic Descriptions per Genre/Layout (Highly Discriminating Terminology)
 DESCRIPTIONS = {
     "base": {
-        "standard": "Clean and trustworthy standard product card. Functional, familiar, no surprises.",
-        "compact": "Efficient horizontal list item. High density for easy scanning. Unobtrusive.",
-        "featured": "Prominent highlighted product card. Designed to gently emphasize promotions.",
-        "gallery": "Minimalist image-focused view. Details reveal slowly. Clean presentation.",
-        "technical": "Data-heavy informative layout. Specs and details are front and center.",
-        "bold": "Typographic emphasis. Large, readable text over subtle backgrounds.",
+        "standard": "Standard commodity software UI. Generic functional patterns, system-default contrast, and conservative visual weighting with average alignment.",
+        "compact": "Utility-first dense list view for basic data scanning. Default system-font styling with neutral technical focus.",
+        "featured": "Generic highlight pattern using traditional bordering. Balanced density for standard promotional emphasis on neutral background.",
+        "gallery": "Commodity grid layout with standard padding. Predictable image-to-text ratios for generic browsing experiences.",
+        "technical": "Utility data sheet. Primary focus on tabular representation and standard legibility without any stylistic enhancements.",
+        "bold": "Generic typographic emphasis. Standard bold headers over plain gray or white background containers.",
     },
     "minimalist": {
-        "standard": "Stark white, zero borders, ample whitespace. High-end art gallery feeling.",
-        "compact": "Razor-sharp, airy horizontal strip. Perfect alignment and whisper-thin lines.",
-        "featured": "Massive isolated image. Tiny, sophisticated luxury typography floating nearby.",
-        "gallery": "Pure image block. Subdued text on interaction. Total visual immersion.",
-        "technical": "Architectural grid of mono-spaced tiny text. Stark, calculated, precise.",
-        "bold": "Large, ultra-thin Helvetica-style text. Premium editorial magazine layout.",
+        "standard": "Ultra-low density design with massive whitespace. Crisp thin-weight typography, whisper-thin lines, and highly streamlined clinical aesthetic.",
+        "compact": "Streamlined horizontal list item with high spatial gutters. Sophisticated thin typography and zero visual clutters or noise.",
+        "featured": "Stark isolated product focus with extreme whitespace buffers. Clinical editorial layout featuring crisp, high-hierarchy thin typography.",
+        "gallery": "Ultra-clean grid. High whitespace gutters and massive breathing room with lean lines and restrained information density.",
+        "technical": "Architectural monospaced layout with clinical precision. High-contrast whitespace and minimal borders for a curated look.",
+        "bold": "Editorial magazine layout with massive thin-weight headers. Premium low-density design with high whitespace and crisp visual hierarchy.",
     },
     "neobrutalist": {
-        "standard": "Thick black borders, hard offset shadows, punchy flat colors. Raw and playful.",
-        "compact": "Distinct rigid boxes for data. High contrast horizontal strip. Clunky but fun.",
-        "featured": "Aggressive, attention-grabbing box. Clashing colors and massive borders. Unignorable.",
-        "gallery": "Image trapped in a thick window frame. Hover effects are distorted and jagged.",
-        "technical": "Unpolished aesthetic. Looks like raw HTML inputs or raw database entries.",
-        "bold": "Massive, black, outline text. Looks like a chaotic protest poster or zine.",
+        "standard": "Aggressive raw design system. Harsh high-contrast black borders, hard-offset drop shadows, and high-saturation flat primary colors. Anti-design aesthetic.",
+        "compact": "High-contrast rigid bordering with thick black strokes. Saturated color blocks and unpolished hard-offset-shadow visual effects.",
+        "featured": "Dissonant attention-grabbing layout with massive black outlines. Saturated clashing colors and raw brutalist visual energy and thick strokes.",
+        "gallery": "Clipped image containers with hard black borders. Jagged layout patterns with high-contrast pop-art aesthetics and thick outlines.",
+        "technical": "Raw HTML/System-default style with thick black borders. High-contrast monospaced information with aggressive styling and hard shadows.",
+        "bold": "Huge black-outline typography. Saturated color backdrops with massive high-contrast strokes and raw unpolished aesthetic.",
     },
     "glassmorphism": {
-        "standard": "Translucent frosted glass floating over a soft pastel gradient. Ethereal and premium.",
-        "compact": "Delicate, slim glass bar blurring the background. Futuristic and gentle.",
-        "featured": "Large glowing pane with soft inner light. High-tech, expensive, smooth.",
-        "gallery": "Soft, blurred edges floating in space. Dreamy, no hard lines anywhere.",
-        "technical": "Heads-up display (HUD) style. Semi-transparent data overlays on glass.",
-        "bold": "Subtle but large typography etched directly into the frosted glass surface.",
+        "standard": "Vibrant translucent frosted-glass panels with blurred textures. High-tech blur-behind effects and glowing light-diffused gradients with soft glows.",
+        "compact": "Semi-transparent glowing glass bar. Diffused backlight effects with modern frosted surfacing and high-tech glass-blur layers.",
+        "featured": "Massive glowing frosted glass pane with soft inner glows. Futuristic translucent layers and high-vibrancy color gradients with light diffusion.",
+        "gallery": "Floating transparent glass cards with blurred background visibility. Multi-layered light-refracted surfaces and ethereal gradients with soft glows.",
+        "technical": "Heads-up display (HUD) on translucent glass. Technical data-overlays with frosted textures and refined back-lighting and neon accents.",
+        "bold": "Vibrant etched glass typography. Large headers on semi-transparent blurred surfaces with high-vibrancy glow effects and light diffusion.",
     },
     "loud": {
-        "standard": "Vibrant gradients, high contrast, aggressive energy. Demands your immediate attention.",
-        "compact": "Condensed blast of intense color and bold text. Extremely noisy and fast.",
-        "featured": "Explodes off the screen. Neon colors and maximum visual impact. Overwhelming.",
-        "gallery": "Heavily treated duo-tone or glitch-filtered images. Very intense visuals.",
-        "technical": "Specs highlighted with neon markers. Frantic energy and chaotic layout.",
-        "bold": "Massive streetwear poster vibe. Screaming text covering entire backgrounds.",
+        "standard": "High-saturation energy neon gradients and aggressive chroma. Vibrant high-impact visuals with chaotic energy and loud visual density and massive noise.",
+        "compact": "Condensed blast of high-saturation colors. Noisy high-energy density with aggressive vibrance and loud maximalist typographic focus.",
+        "featured": "Explosive product spotlight using saturated neon gradients. Maximum visual noise and high-decibel design impact with vibration effects.",
+        "gallery": "Glitch-filtered high-saturation images. Intense vibrant color chaos with energetic patterns and maximalist visual styling and neon noise.",
+        "technical": "Neon-accented technical metrics. Frantic high-saturation markers and overwhelming energy with high-density visual markers and chaotic chroma.",
+        "bold": "Maximalist streetwear aesthetic. Saturated background colors with screaming text and high-energy vibrant typography and massive visual noise.",
     },
     "cyber": {
-        "standard": "Dark terminal window with green phosphor text and scanlines. Hacker aesthetic.",
-        "compact": "Command-line style output. Monospaced fonts and blinking cursors.",
-        "featured": "Mainframe complex data visualization. Very dark, intense, high-tech.",
-        "gallery": "Images look like they are actively decoding or downloading line by line.",
-        "technical": "Weapon readout interface from a sci-fi game. Dark mode, dense, tactical.",
-        "bold": "System alert warning labels. Industrial sci-fi typography and high contrast.",
+        "standard": "Dark-mode technical terminal. Green/Neon phosphor scanline effects, monospaced fonts, and industrial hacker aesthetics with tactical UI.",
+        "compact": "CLI-inspired horizontal output. Monospaced console text with high-tech system-default styling and dark-mode focus and phosphor glow.",
+        "featured": "Complex dark-mode data hub. Intensive tactical UI with high-density monospaced metrics and futuristic system readouts and green neon.",
+        "gallery": "Tactical image decoding interface. Dark-mode grid with industrial scanlines and high-tech terminal navigation and monospaced labels.",
+        "technical": "Military-grade tactical readout. Dark background with high-density monospaced data and high-tech weaponry interface aesthetics and code-based UI.",
+        "bold": "Industrial technical warnings. High-contrast dark-mode typography with technical alerts and futuristic sci-fi labels and tactical icons.",
     },
 }
 
 TAGS = {
-    "base": ["classic", "reliable", "clean"],
-    "minimalist": ["luxury", "premium", "stark"],
-    "neobrutalist": ["playful", "bold", "raw"],
-    "glassmorphism": ["ethereal", "dreamy", "modern"],
-    "loud": ["energetic", "vibrant", "intense"],
-    "cyber": ["technical", "dark", "hacker"],
+    "base": ["standard-ui", "familiar", "neutral-contrast"],
+    "minimalist": ["low-density", "high-whitespace", "thin-typography"],
+    "neobrutalist": ["high-contrast", "thick-borders", "flat-color"],
+    "glassmorphism": ["frosted-glass", "translucent", "blur-effect"],
+    "loud": ["high-saturation", "vibrant-gradients", "intense-energy"],
+    "cyber": ["dark-mode", "monospaced", "hud-layout"],
 }
 
 
