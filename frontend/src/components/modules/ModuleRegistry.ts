@@ -1,5 +1,4 @@
 import React from 'react';
-import type { Genre as GenreType, LayoutType as LayoutTypeValue } from '../../schema/types';
 import {
     Genre,
     LayoutType,
@@ -40,15 +39,7 @@ export interface ModuleConfig {
 // Generate the registry programmatically
 const registry: Record<number, ModuleConfig> = {};
 
-// Semantic tags for each generic combo (simplified for client)
-const TAGS: Record<Genre, string[]> = {
-    [Genre.BASE]: ["classic", "clean"],
-    [Genre.MINIMALIST]: ["luxury", "stark"],
-    [Genre.NEOBRUTALIST]: ["bold", "raw"],
-    [Genre.GLASSMORPHISM]: ["ethereal", "modern"],
-    [Genre.LOUD]: ["vibrant", "energetic"],
-    [Genre.CYBER]: ["tech", "dark"]
-};
+
 
 // Populate
 for (let genre = 0; genre < 6; genre++) {

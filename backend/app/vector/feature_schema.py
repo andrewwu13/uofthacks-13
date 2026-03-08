@@ -4,6 +4,7 @@ Feature Schema for Vector-Based Module Matching
 Defines the 12-dimensional feature space used to represent both
 modules and user profiles for similarity matching.
 """
+
 from typing import List, Dict, Literal
 import numpy as np
 
@@ -13,21 +14,23 @@ FEATURE_DIMENSIONS = 12
 # Type alias for feature vectors
 FeatureVector = List[float]
 
+
 # Feature index mapping
 class FeatureIndex:
     """Indices for each feature in the vector"""
-    DARKNESS = 0           # 0=light, 1=dark
-    VIBRANCY = 1           # 0=muted, 1=vibrant  
-    CORNER_ROUNDNESS = 2   # 0=sharp, 1=pill
-    DENSITY = 3            # 0=low, 1=high
+
+    DARKNESS = 0  # 0=light, 1=dark
+    VIBRANCY = 1  # 0=muted, 1=vibrant
+    CORNER_ROUNDNESS = 2  # 0=sharp, 1=pill
+    DENSITY = 3  # 0=low, 1=high
     TYPOGRAPHY_WEIGHT = 4  # 0=light, 1=bold
-    BUTTON_SIZE = 5        # 0=small, 1=large
-    MINIMALISM = 6         # Genre weight
-    BRUTALISM = 7          # Genre weight
-    GLASS_EFFECT = 8       # Genre weight
-    LOUDNESS = 9           # Genre weight (experimental)
-    INTERACTIVITY = 10     # Animation level
-    EXPLORATION = 11       # Novel vs stable preference
+    BUTTON_SIZE = 5  # 0=small, 1=large
+    MINIMALISM = 6  # Genre weight
+    BRUTALISM = 7  # Genre weight
+    GLASS_EFFECT = 8  # Genre weight
+    LOUDNESS = 9  # Genre weight (experimental)
+    INTERACTIVITY = 10  # Animation level
+    EXPLORATION = 11  # Novel vs stable preference
 
 
 # Encoding mappings for categorical values
@@ -64,9 +67,9 @@ ENCODINGS = {
     },
     # Decision confidence → exploration
     "decision_confidence": {
-        "high": 0.2,    # Confident = less exploration
+        "high": 0.2,  # Confident = less exploration
         "medium": 0.5,
-        "low": 0.8,     # Uncertain = more exploration
+        "low": 0.8,  # Uncertain = more exploration
     },
     # Exploration tolerance
     "exploration_tolerance": {
@@ -84,7 +87,7 @@ ENCODINGS = {
 
 # Genre to vector component mapping
 GENRE_VECTORS = {
-    "base": [0.0, 0.0, 0.0, 0.2],      # minimalism, brutalism, glass, loudness
+    "base": [0.0, 0.0, 0.0, 0.2],  # minimalism, brutalism, glass, loudness
     "minimalist": [1.0, 0.0, 0.0, 0.0],
     "neobrutalist": [0.0, 1.0, 0.0, 0.3],
     "glassmorphism": [0.3, 0.0, 1.0, 0.0],

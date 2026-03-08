@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Tuple, Literal, Optional
 
+
 class MotorTelemetry(BaseModel):
     session_id: str
     device: Literal["mouse", "touch"]
@@ -8,11 +9,13 @@ class MotorTelemetry(BaseModel):
     dt: int
     samples: List[List[int]]  # List of [x, y] coordinates
 
+
 class TelemetryEvent(BaseModel):
     ts: int
-    type: str # e.g., "hover", "enter_viewport"
+    type: str  # e.g., "hover", "enter_viewport"
     target_id: str
     duration_ms: Optional[int] = None
+
 
 class TelemetryEventsBatch(BaseModel):
     session_id: str

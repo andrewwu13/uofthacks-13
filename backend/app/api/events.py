@@ -15,6 +15,7 @@ from app.config import settings
 # Import semantic cache
 import sys
 import os
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 cache_dir = os.path.abspath(os.path.join(current_dir, "../../../cache"))
 if cache_dir not in sys.path:
@@ -22,9 +23,12 @@ if cache_dir not in sys.path:
 
 try:
     from semantic_cache import semantic_cache, generate_telemetry_summary
+
     SEMANTIC_CACHE_AVAILABLE = True
 except ImportError:
-    logging.getLogger(__name__).warning("Could not import semantic_cache. Caching will be disabled.")
+    logging.getLogger(__name__).warning(
+        "Could not import semantic_cache. Caching will be disabled."
+    )
     SEMANTIC_CACHE_AVAILABLE = False
     semantic_cache = None
     generate_telemetry_summary = None
@@ -32,6 +36,7 @@ except ImportError:
 # Import Agent Graph
 import sys
 import os
+
 # Ensure root directory is in path for agents import
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, "../../../"))
@@ -41,7 +46,9 @@ if root_dir not in sys.path:
 try:
     from agents.graph import run_layout_generation
 except ImportError:
-    logging.getLogger(__name__).warning("Could not import agents.graph. Inference will be disabled.")
+    logging.getLogger(__name__).warning(
+        "Could not import agents.graph. Inference will be disabled."
+    )
     run_layout_generation = None
 
 
@@ -57,7 +64,7 @@ async def ensure_semantic_cache_initialized():
     global _semantic_cache_initialized
     if _semantic_cache_initialized or not SEMANTIC_CACHE_AVAILABLE:
         return
-    
+
     if settings.SEMANTIC_CACHE_ENABLED and settings.GOOGLE_API_KEY:
         try:
             semantic_cache.redis = redis_client
@@ -76,46 +83,48 @@ async def ensure_semantic_cache_initialized():
 def transform_motor_samples(motor: MotorTelemetryPayload) -> List[Dict]:
     """
     Transform frontend motor samples [[x, y], ...] into format expected by motor_analyzer.
-    
+
     Calculates velocity and acceleration from position samples.
     """
     if not motor or not motor.samples or len(motor.samples) < 2:
         return []
-    
+
     samples = motor.samples
     dt_sec = motor.dt / 1000.0  # Convert ms to seconds
     result = []
-    
+
     prev_vel_x, prev_vel_y = 0.0, 0.0
-    
+
     for i, sample in enumerate(samples):
         x, y = sample[0], sample[1]
         timestamp = motor.t0 + (i * motor.dt)
-        
+
         # Calculate velocity (derivative of position)
         if i > 0:
-            prev_x, prev_y = samples[i-1][0], samples[i-1][1]
+            prev_x, prev_y = samples[i - 1][0], samples[i - 1][1]
             vel_x = (x - prev_x) / dt_sec if dt_sec > 0 else 0
             vel_y = (y - prev_y) / dt_sec if dt_sec > 0 else 0
         else:
             vel_x, vel_y = 0.0, 0.0
-        
+
         # Calculate acceleration (derivative of velocity)
         if i > 0:
             acc_x = (vel_x - prev_vel_x) / dt_sec if dt_sec > 0 else 0
             acc_y = (vel_y - prev_vel_y) / dt_sec if dt_sec > 0 else 0
         else:
             acc_x, acc_y = 0.0, 0.0
-        
-        result.append({
-            "timestamp": timestamp,
-            "position": {"x": x, "y": y},
-            "velocity": {"x": vel_x, "y": vel_y},
-            "acceleration": {"x": acc_x, "y": acc_y},
-        })
-        
+
+        result.append(
+            {
+                "timestamp": timestamp,
+                "position": {"x": x, "y": y},
+                "velocity": {"x": vel_x, "y": vel_y},
+                "acceleration": {"x": acc_x, "y": acc_y},
+            }
+        )
+
         prev_vel_x, prev_vel_y = vel_x, vel_y
-    
+
     return result
 
 
@@ -138,14 +147,14 @@ async def process_telemetry_batch(batch: EventBatch):
             doc["device_type"] = batch.device_type
             doc["batch_timestamp"] = batch.timestamp
             docs.append(doc)
-            
+
         if docs:
             await mongo_client.telemetry.insert_many(docs)
-            
+
         # Handle motor data if present
         if batch.motor:
             motor_doc = batch.motor.model_dump()
-            motor_doc["session_id"] = batch.session_id 
+            motor_doc["session_id"] = batch.session_id
             motor_doc["batch_timestamp"] = batch.timestamp
             await mongo_client.db.motor_telemetry.insert_one(motor_doc)
 
@@ -154,15 +163,17 @@ async def process_telemetry_batch(batch: EventBatch):
         # ========================================
         # Step 2: Run Reducer Pipeline (with Concurrency Lock)
         # ========================================
-        
+
         # Check if agent is already running for this session
         LOCK_KEY = f"agent_lock:{batch.session_id}"
         # Try to acquire lock for 30 seconds (max expected duration)
         # We use a simple SETNX equivalent: set(key, value, ex=ttl, nx=True)
         is_locked = await redis_client.set(LOCK_KEY, "running", ex=30, nx=True)
-        
+
         if not is_locked:
-            logger.info(f"Skipping agent workflow for session {batch.session_id} - Lock held by another task")
+            logger.info(
+                f"Skipping agent workflow for session {batch.session_id} - Lock held by another task"
+            )
             return
 
         try:
@@ -180,48 +191,61 @@ async def process_telemetry_batch(batch: EventBatch):
             if batch.motor:
                 motor_data = transform_motor_samples(batch.motor)
                 logger.info(f"Transformed {len(motor_data)} motor samples for analysis")
-            
+
             # Extract interaction events (all events in batch)
             interaction_events = [e.model_dump() for e in batch.events]
-            
+
             # Filter 'loud' module events as a subset
             loud_events = [
-                e for e in interaction_events
-                if (e.get('metadata') or {}).get('is_loud', False) or
-                "loud" in (e.get('target_id') or "").lower()
+                e
+                for e in interaction_events
+                if (e.get("metadata") or {}).get("is_loud", False)
+                or "loud" in (e.get("target_id") or "").lower()
             ]
-            
+
             # ========================================
             # Step 2.5: Check Semantic Cache
             # ========================================
             cache_hit = False
             cached_result = None
             telemetry_summary = None
-            
+
             # Initialize semantic cache if needed
             await ensure_semantic_cache_initialized()
-            
-            if SEMANTIC_CACHE_AVAILABLE and semantic_cache and semantic_cache.is_enabled():
+
+            if (
+                SEMANTIC_CACHE_AVAILABLE
+                and semantic_cache
+                and semantic_cache.is_enabled()
+            ):
                 try:
                     # Generate telemetry summary for cache lookup
                     # Estimate motor state from velocity patterns
                     motor_state = "idle"
                     if motor_data:
                         avg_velocity = sum(
-                            (abs(s.get("velocity", {}).get("x", 0)) + abs(s.get("velocity", {}).get("y", 0))) / 2
+                            (
+                                abs(s.get("velocity", {}).get("x", 0))
+                                + abs(s.get("velocity", {}).get("y", 0))
+                            )
+                            / 2
                             for s in motor_data[-10:]
                         ) / min(len(motor_data), 10)
-                        
+
                         avg_jerk = 0
                         if len(motor_data) >= 3:
                             for i in range(2, min(len(motor_data), 12)):
-                                acc_prev = motor_data[i-1].get("acceleration", {})
+                                acc_prev = motor_data[i - 1].get("acceleration", {})
                                 acc_curr = motor_data[i].get("acceleration", {})
-                                jerk_x = abs(acc_curr.get("x", 0) - acc_prev.get("x", 0))
-                                jerk_y = abs(acc_curr.get("y", 0) - acc_prev.get("y", 0))
+                                jerk_x = abs(
+                                    acc_curr.get("x", 0) - acc_prev.get("x", 0)
+                                )
+                                jerk_y = abs(
+                                    acc_curr.get("y", 0) - acc_prev.get("y", 0)
+                                )
                                 avg_jerk += (jerk_x + jerk_y) / 2
                             avg_jerk /= min(len(motor_data) - 2, 10)
-                        
+
                         # Classify motor state
                         if avg_velocity < 50:
                             motor_state = "idle"
@@ -231,36 +255,44 @@ async def process_telemetry_batch(batch: EventBatch):
                             motor_state = "determined"
                         else:
                             motor_state = "browsing"
-                    
+
                     telemetry_summary = generate_telemetry_summary(
                         session_id=batch.session_id,
                         motor_state=motor_state,
                         motor_data=motor_data,
                         interaction_events=interaction_events,
-                        device_type=batch.device_type
+                        device_type=batch.device_type,
                     )
-                    
+
                     # Check cache for similar telemetry
                     cached_result = await semantic_cache.get(telemetry_summary)
-                    
+
                     if cached_result:
                         cache_hit = True
                         suggested_id = cached_result.get("suggested_id", 0)
-                        recommended_genre = cached_result.get("recommended_genre", "base")
-                        profile_summary = cached_result.get("profile_summary", "Cached User")
-                        logger.info(f"🎯 SEMANTIC CACHE HIT - Skipping agent call. ID: {suggested_id}")
-                        
+                        recommended_genre = cached_result.get(
+                            "recommended_genre", "base"
+                        )
+                        profile_summary = cached_result.get(
+                            "profile_summary", "Cached User"
+                        )
+                        logger.info(
+                            f"🎯 SEMANTIC CACHE HIT - Skipping agent call. ID: {suggested_id}"
+                        )
+
                 except Exception as e:
                     logger.warning(f"Semantic cache lookup failed: {e}")
-            
+
             # 3. Run Agent Graph (Inference) - ONLY if cache miss
             if not cache_hit:
                 reducer_output = None
-                
+
                 if run_layout_generation:
                     try:
-                        logger.info(f"Triggering Agent Workflow for session {batch.session_id}...")
-                        
+                        logger.info(
+                            f"Triggering Agent Workflow for session {batch.session_id}..."
+                        )
+
                         user_profile_dict = await run_layout_generation(
                             session_id=batch.session_id,
                             telemetry_batch=motor_data,
@@ -268,35 +300,54 @@ async def process_telemetry_batch(batch: EventBatch):
                             loud_module_events=loud_events,
                             current_preferences=current_preferences,
                         )
-                        
+
                         # Query vector store for recommended template ID
                         if user_profile_dict:
-                            from app.vector import get_recommended_template_id, get_recommended_genre
-                            
+                            from app.vector import (
+                                get_recommended_template_id,
+                                get_recommended_genre,
+                            )
+
                             # Get Integer ID (0-35) for sampling
-                            suggested_id = get_recommended_template_id(user_profile_dict)
-                            
+                            suggested_id = get_recommended_template_id(
+                                user_profile_dict
+                            )
+
                             # Keep genre for logging purposes
                             recommended_genre = get_recommended_genre(user_profile_dict)
-                            profile_summary = user_profile_dict.get('inferred', {}).get('summary', 'New User')
-                            
-                            logger.info(f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})")
-                            
+                            profile_summary = user_profile_dict.get("inferred", {}).get(
+                                "summary", "New User"
+                            )
+
+                            logger.info(
+                                f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})"
+                            )
+
                             # Store result in semantic cache for future requests
-                            if SEMANTIC_CACHE_AVAILABLE and semantic_cache and semantic_cache.is_enabled() and telemetry_summary:
+                            if (
+                                SEMANTIC_CACHE_AVAILABLE
+                                and semantic_cache
+                                and semantic_cache.is_enabled()
+                                and telemetry_summary
+                            ):
                                 try:
-                                    await semantic_cache.set(telemetry_summary, {
-                                        "suggested_id": suggested_id,
-                                        "recommended_genre": recommended_genre,
-                                        "profile_summary": profile_summary,
-                                    })
+                                    await semantic_cache.set(
+                                        telemetry_summary,
+                                        {
+                                            "suggested_id": suggested_id,
+                                            "recommended_genre": recommended_genre,
+                                            "profile_summary": profile_summary,
+                                        },
+                                    )
                                 except Exception as e:
-                                    logger.warning(f"Failed to store result in semantic cache: {e}")
+                                    logger.warning(
+                                        f"Failed to store result in semantic cache: {e}"
+                                    )
                         else:
                             suggested_id = 0
                             recommended_genre = "base"
                             profile_summary = "New User"
-                            
+
                     except Exception as e:
                         logger.error(f"Agent Workflow failed: {e}")
                         suggested_id = 0
@@ -315,18 +366,19 @@ async def process_telemetry_batch(batch: EventBatch):
                 session_id=batch.session_id,
                 layout_update={
                     "suggested_id": suggested_id,  # The specific Integer ID (0-35)
-                    "recommended_genre": recommended_genre, # Legacy/Reference
+                    "recommended_genre": recommended_genre,  # Legacy/Reference
                     "profile_summary": profile_summary,
                     "session_id": batch.session_id,
-                }
+                },
             )
-            
-            logger.info(f"Published layout update via SSE for session {batch.session_id}")
-            
+
+            logger.info(
+                f"Published layout update via SSE for session {batch.session_id}"
+            )
+
         finally:
             # Release lock
             await redis_client.delete(LOCK_KEY)
-
 
         # DEBUG: Log summary
         print(f"\n=== TELEMETRY → VECTOR PIPELINE ===")
@@ -336,10 +388,11 @@ async def process_telemetry_batch(batch: EventBatch):
         print(f"Recommended Genre: {recommended_genre}")
         print(f"Profile: {profile_summary}")
         print(f"===================================")
-        
+
     except Exception as e:
         logger.error(f"Error processing telemetry batch: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -352,9 +405,5 @@ async def receive_events(batch: EventBatch, background_tasks: BackgroundTasks):
     """
     # Offload storage, pipeline, and SSE publishing to background
     background_tasks.add_task(process_telemetry_batch, batch)
-    
-    return EventResponse(
-        received=len(batch.events),
-        session_id=batch.session_id
-    )
 
+    return EventResponse(received=len(batch.events), session_id=batch.session_id)

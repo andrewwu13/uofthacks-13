@@ -1,12 +1,14 @@
 """
 User preference models
 """
+
 from pydantic import BaseModel
 from typing import Optional, List
 
 
 class GenreWeights(BaseModel):
     """Probability weights for each UI genre"""
+
     base: float = 0.2
     minimalist: float = 0.2
     neobrutalist: float = 0.2
@@ -16,6 +18,7 @@ class GenreWeights(BaseModel):
 
 class ColorPreferences(BaseModel):
     """Learned color preferences"""
+
     primary_colors: List[str] = []
     accent_colors: List[str] = []
     preferred_contrast: str = "normal"  # "low", "normal", "high"
@@ -23,6 +26,7 @@ class ColorPreferences(BaseModel):
 
 class UserPreferences(BaseModel):
     """Aggregated user preferences"""
+
     session_id: str
     genre_weights: GenreWeights = GenreWeights()
     color_preferences: ColorPreferences = ColorPreferences()

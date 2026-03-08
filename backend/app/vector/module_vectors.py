@@ -8,6 +8,7 @@ Module ID System (36 Modules):
 - ID = (genre * 6) + layout
 - This gives us 6 genres × 6 layouts = 36 unique modules
 """
+
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 from app.vector.feature_schema import (
@@ -17,7 +18,6 @@ from app.vector.feature_schema import (
     GENRE_VECTORS,
     normalize_vector,
 )
-
 
 # ============================================
 # ID ENCODING (Matches Frontend)
@@ -33,19 +33,19 @@ GENRE_MAP = {
     "neobrutalist": 2,
     "glassmorphism": 3,
     "loud": 4,
-    "cyber": 5
+    "cyber": 5,
 }
 
 GENRE_NAMES = {v: k for k, v in GENRE_MAP.items()}
 
 # Layout Mappings (0-5)
 LAYOUT_MAP = {
-    "standard": 0,   # Standard Card
-    "compact": 1,    # Compact / List
-    "featured": 2,   # Featured / Heroic
-    "gallery": 3,    # Gallery / Visual
+    "standard": 0,  # Standard Card
+    "compact": 1,  # Compact / List
+    "featured": 2,  # Featured / Heroic
+    "gallery": 3,  # Gallery / Visual
     "technical": 4,  # Technical / Data
-    "bold": 5        # Typographic / Bold
+    "bold": 5,  # Typographic / Bold
 }
 
 LAYOUT_NAMES = {v: k for k, v in LAYOUT_MAP.items()}
@@ -65,24 +65,27 @@ def decode_module_id(module_id: int) -> dict:
     """Decode module ID to genre and layout"""
     genre_idx = module_id // MODULES_PER_GENRE
     layout_idx = module_id % MODULES_PER_GENRE
-    
+
     return {
         "genre": GENRE_NAMES.get(genre_idx, "base"),
-        "layout": LAYOUT_NAMES.get(layout_idx, "standard")
+        "layout": LAYOUT_NAMES.get(layout_idx, "standard"),
     }
 
 
 class ModuleMetadata(BaseModel):
     """Extended module metadata with feature vector"""
+
     module_id: int
-    layout: str  
-    genre: str        
+    layout: str
+    genre: str
     description: str
     tags: List[str]
-    
+
     # Feature vector (12 dimensions)
-    feature_vector: List[float] = Field(default_factory=lambda: [0.5] * FEATURE_DIMENSIONS)
-    
+    feature_vector: List[float] = Field(
+        default_factory=lambda: [0.5] * FEATURE_DIMENSIONS
+    )
+
     # Explicit feature overrides (0-1 range)
     darkness: float = 0.5
     vibrancy: float = 0.5
@@ -91,11 +94,11 @@ class ModuleMetadata(BaseModel):
     typography_weight: float = 0.5
     button_size: float = 0.5
     interactivity: float = 0.5
-    
+
     def compute_vector(self) -> List[float]:
         """Compute the full feature vector from module properties"""
         vector = [0.0] * FEATURE_DIMENSIONS
-        
+
         # Visual features
         vector[FeatureIndex.DARKNESS] = self.darkness
         vector[FeatureIndex.VIBRANCY] = self.vibrancy
@@ -103,18 +106,18 @@ class ModuleMetadata(BaseModel):
         vector[FeatureIndex.DENSITY] = self.density
         vector[FeatureIndex.TYPOGRAPHY_WEIGHT] = self.typography_weight
         vector[FeatureIndex.BUTTON_SIZE] = self.button_size
-        
+
         # Genre features
         genre_vec = GENRE_VECTORS.get(self.genre, [0.0, 0.0, 0.0, 0.2])
         vector[FeatureIndex.MINIMALISM] = genre_vec[0]
         vector[FeatureIndex.BRUTALISM] = genre_vec[1]
         vector[FeatureIndex.GLASS_EFFECT] = genre_vec[2]
         vector[FeatureIndex.LOUDNESS] = genre_vec[3]
-        
+
         # Behavioral features
         vector[FeatureIndex.INTERACTIVITY] = self.interactivity
         vector[FeatureIndex.EXPLORATION] = genre_vec[3]  # Loud = exploratory
-        
+
         self.feature_vector = vector
         return vector
 
@@ -131,45 +134,69 @@ def module_to_vector(metadata: ModuleMetadata) -> FeatureVector:
 
 GENRE_PROFILES = {
     "base": {
-        "darkness": 0.3, "vibrancy": 0.4, "corner_roundness": 0.5,
-        "density": 0.5, "typography_weight": 0.5, "button_size": 0.5,
-        "interactivity": 0.4
+        "darkness": 0.3,
+        "vibrancy": 0.4,
+        "corner_roundness": 0.5,
+        "density": 0.5,
+        "typography_weight": 0.5,
+        "button_size": 0.5,
+        "interactivity": 0.4,
     },
     "minimalist": {
-        "darkness": 0.0, "vibrancy": 0.1, "corner_roundness": 0.0,
-        "density": 0.2, "typography_weight": 0.3, "button_size": 0.4,
-        "interactivity": 0.2
+        "darkness": 0.0,
+        "vibrancy": 0.1,
+        "corner_roundness": 0.0,
+        "density": 0.2,
+        "typography_weight": 0.3,
+        "button_size": 0.4,
+        "interactivity": 0.2,
     },
     "neobrutalist": {
-        "darkness": 0.1, "vibrancy": 0.9, "corner_roundness": 0.0,
-        "density": 0.8, "typography_weight": 1.0, "button_size": 0.8,
-        "interactivity": 0.6
+        "darkness": 0.1,
+        "vibrancy": 0.9,
+        "corner_roundness": 0.0,
+        "density": 0.8,
+        "typography_weight": 1.0,
+        "button_size": 0.8,
+        "interactivity": 0.6,
     },
     "glassmorphism": {
-        "darkness": 0.3, "vibrancy": 0.5, "corner_roundness": 0.8,
-        "density": 0.4, "typography_weight": 0.4, "button_size": 0.5,
-        "interactivity": 0.7
+        "darkness": 0.3,
+        "vibrancy": 0.5,
+        "corner_roundness": 0.8,
+        "density": 0.4,
+        "typography_weight": 0.4,
+        "button_size": 0.5,
+        "interactivity": 0.7,
     },
     "loud": {
-        "darkness": 0.2, "vibrancy": 1.0, "corner_roundness": 0.7,
-        "density": 0.6, "typography_weight": 0.8, "button_size": 0.7,
-        "interactivity": 0.9
+        "darkness": 0.2,
+        "vibrancy": 1.0,
+        "corner_roundness": 0.7,
+        "density": 0.6,
+        "typography_weight": 0.8,
+        "button_size": 0.7,
+        "interactivity": 0.9,
     },
     "cyber": {
-        "darkness": 0.95, "vibrancy": 0.7, "corner_roundness": 0.1,
-        "density": 0.5, "typography_weight": 0.5, "button_size": 0.5,
-        "interactivity": 0.8
-    }
+        "darkness": 0.95,
+        "vibrancy": 0.7,
+        "corner_roundness": 0.1,
+        "density": 0.5,
+        "typography_weight": 0.5,
+        "button_size": 0.5,
+        "interactivity": 0.8,
+    },
 }
 
 # Layout feature modifications
 LAYOUT_MODIFIERS = {
     "standard": {},
     "compact": {"density": 0.8, "button_size": 0.3},
-    "featured": {"density": 0.3, "button_size": 0.7, "vibrancy": 0.1}, # +0.1 vibrancy
+    "featured": {"density": 0.3, "button_size": 0.7, "vibrancy": 0.1},  # +0.1 vibrancy
     "gallery": {"density": 0.2, "interactivity": 0.8},
     "technical": {"density": 0.9, "typography_weight": 0.2},
-    "bold": {"typography_weight": 0.9, "vibrancy": 0.1}
+    "bold": {"typography_weight": 0.9, "vibrancy": 0.1},
 }
 
 # Semantic Descriptions per Genre/Layout
@@ -180,7 +207,7 @@ DESCRIPTIONS = {
         "featured": "A highlighted product card with slightly larger image and emphasis. Good for promotions.",
         "gallery": "A minimalist image-focused card with details revealed on hover.",
         "technical": "A detailed card showing product specs clearly arranged. informative.",
-        "bold": "A card with larger typography for the title, emphasizing the name."
+        "bold": "A card with larger typography for the title, emphasizing the name.",
     },
     "minimalist": {
         "standard": "A stark white card with zero borders and ample whitespace. Feels like a high-end art gallery.",
@@ -188,7 +215,7 @@ DESCRIPTIONS = {
         "featured": "A massive isolated image with tiny, sophisticated typography floating next to it.",
         "gallery": "A pure image block. No text visible until interaction. Complete visual immersion.",
         "technical": "Specs laid out in a fine grid with mono-spaced tiny fonts. Architectural feel.",
-        "bold": "Title written in large, thin Helvetica. Very editorial and magazine-like."
+        "bold": "Title written in large, thin Helvetica. Very editorial and magazine-like.",
     },
     "neobrutalist": {
         "standard": "A bold card with thick black borders, hard offset shadow, and punchy yellow accents. Playful and raw.",
@@ -196,7 +223,7 @@ DESCRIPTIONS = {
         "featured": "A loud, attention-grabbing box with clashing colors and massive borders. Cannot be ignored.",
         "gallery": "Image trapped inside a thick window frame. Hover distorts the image or shifts colors.",
         "technical": "Data points look like raw HTML inputs or database entries. Very unpolished aesthetic.",
-        "bold": "Title text is massive, black, and possibly outlined. Feels like a protest poster."
+        "bold": "Title text is massive, black, and possibly outlined. Feels like a protest poster.",
     },
     "glassmorphism": {
         "standard": "A translucent frosted glass card floating over a soft gradient. Ethereal and premium.",
@@ -204,7 +231,7 @@ DESCRIPTIONS = {
         "featured": "A large glowing glass pane with soft inner light. Feels expensive and high-tech.",
         "gallery": "Images have soft, blurred edges and float in space. No hard lines anywhere.",
         "technical": "Data is displayed on a 'heads-up display' (HUD) style glass interface.",
-        "bold": "Typography seems to be etched into the glass surface. Subtle but large."
+        "bold": "Typography seems to be etched into the glass surface. Subtle but large.",
     },
     "loud": {
         "standard": "A high-energy card using vibrant gradients and aggressive motion. Demands attention.",
@@ -212,7 +239,7 @@ DESCRIPTIONS = {
         "featured": "Explodes off the screen with parallax effects and neon colors. Maximum impact.",
         "gallery": "Images are heavily treated with filters or duo-tone gradients until hovered.",
         "technical": "Specs are highlighted with neon markers and frantic energy.",
-        "bold": "Text covers the entire image in a massive, poster-style treatment. Street-wear vibe."
+        "bold": "Text covers the entire image in a massive, poster-style treatment. Street-wear vibe.",
     },
     "cyber": {
         "standard": "A dark terminal window with green phosphor text and scanlines. Hacker aesthetic.",
@@ -220,8 +247,8 @@ DESCRIPTIONS = {
         "featured": "A large mainframe display look. Complex data visualizations surround the product.",
         "gallery": "Images look like they are being decoded or downloaded line by line.",
         "technical": "The ultimate specs card. Looks like a weapon readout in a sci-fi game.",
-        "bold": "Typography looks like warning labels or system alerts. Industrial sci-fi."
-    }
+        "bold": "Typography looks like warning labels or system alerts. Industrial sci-fi.",
+    },
 }
 
 TAGS = {
@@ -230,44 +257,44 @@ TAGS = {
     "neobrutalist": ["playful", "bold", "raw"],
     "glassmorphism": ["ethereal", "dreamy", "modern"],
     "loud": ["energetic", "vibrant", "intense"],
-    "cyber": ["technical", "dark", "hacker"]
+    "cyber": ["technical", "dark", "hacker"],
 }
 
 
 def create_module(genre: str, layout: str) -> ModuleMetadata:
     """Create a module with proper encoding and genre-based features"""
     profile = GENRE_PROFILES.get(genre, GENRE_PROFILES["base"]).copy()
-    
+
     # Apply layout modifiers
     modifiers = LAYOUT_MODIFIERS.get(layout, {})
     for key, delta in modifiers.items():
         if key in profile:
             profile[key] = max(0.0, min(1.0, profile[key] + delta))
-            
+
     # Get description and tags
     desc = DESCRIPTIONS.get(genre, {}).get(layout, "Standard product module.")
     genre_tags = TAGS.get(genre, [])
     layout_tag = layout
     all_tags = genre_tags + [layout_tag]
-    
+
     return ModuleMetadata(
         module_id=encode_module_id(genre, layout),
         layout=layout,
         genre=genre,
         description=desc,
         tags=all_tags,
-        **profile
+        **profile,
     )
 
 
 def generate_catalog() -> List[ModuleMetadata]:
     """Generate all 36 semantic modules"""
     catalog = []
-    
+
     for genre in GENRE_MAP.keys():
         for layout in LAYOUT_MAP.keys():
             catalog.append(create_module(genre, layout))
-            
+
     return catalog
 
 
@@ -280,7 +307,7 @@ def initialize_module_vectors():
     """Compute and store vectors for all modules"""
     for module in MODULE_CATALOG:
         module.compute_vector()
-    
+
     print(f"[ModuleVectors] Catalog initialized with {len(MODULE_CATALOG)} modules")
 
 
@@ -295,10 +322,10 @@ def get_module_by_id(module_id: int) -> Optional[ModuleMetadata]:
 def get_modules_by_type(module_type: str) -> List[ModuleMetadata]:
     """
     Get modules by layout type.
-    
+
     Args:
         module_type: Layout type (e.g., 'hero', 'product-grid', 'cta', 'standard', 'featured')
-    
+
     Returns:
         List of modules matching the layout type
     """
@@ -314,7 +341,7 @@ def get_modules_by_type(module_type: str) -> List[ModuleMetadata]:
         "technical": "technical",
         "bold": "bold",
     }
-    
+
     layout = type_mapping.get(module_type.lower(), module_type.lower())
-    
+
     return [m for m in MODULE_CATALOG if m.layout == layout]

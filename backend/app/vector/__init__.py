@@ -43,7 +43,7 @@ from app.vector.vector_store import (
 __all__ = [
     # Schema
     "FEATURE_DIMENSIONS",
-    "FeatureVector", 
+    "FeatureVector",
     "FeatureIndex",
     "encode_value",
     "normalize_vector",

@@ -21,7 +21,6 @@ import { GENRE_NAMES } from './schema/types';
 import { initTelemetry } from './tracking';
 import type { TelemetryBatch } from './tracking';
 import { useSSELayout } from './hooks/useSSELayout';
-import type { LayoutUpdate } from './hooks/useSSELayout';
 
 // Backend API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -61,7 +60,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   // Track last clicked product for display
-  const [lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
+  const [_lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
 
   // Telemetry tracking state
   const [batchCount, setBatchCount] = useState(0);
@@ -201,42 +200,7 @@ function App() {
     console.log('Loaded 3 more products, total:', modules.length + 3);
   }, [allProducts, modules.length]);
 
-  // Shuffle genres for all modules
-  const handleGenreShuffle = () => {
-    setModules(prev => prev.map(module => ({
-      ...module,
-      id: `${module.id}-reshuffled-${Date.now()}`,
-      genre: Math.floor(Math.random() * 6) as Genre
-    })));
-    setLastClicked(null);
-  };
 
-  // Reset to initial state
-  const handleReset = () => {
-    if (allProducts.length > 0) {
-      const initialProducts = allProducts.slice(0, 6);
-      const initialModules = createProductModules(initialProducts);
-      setModules(initialModules);
-    }
-    setLastClicked(null);
-  };
-
-  // Group by genre
-  const handleGroupByGenre = () => {
-    if (allProducts.length < 6) return;
-
-    const genreModules: ProductModule[] = [];
-    for (let genre = 0; genre < 6; genre++) {
-      const product = allProducts[genre % allProducts.length];
-      genreModules.push({
-        id: `genre-showcase-${genre}-${Date.now()}`,
-        product,
-        genre: genre as Genre
-      });
-    }
-    setModules(genreModules);
-    setLastClicked(null);
-  };
 
   // Loading state
   if (isInitialLoading) {

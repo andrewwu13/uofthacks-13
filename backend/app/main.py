@@ -1,6 +1,7 @@
 """
 Gen UI Backend - FastAPI Application Entry Point
 """
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +22,7 @@ from app.websocket.handlers import handle_websocket_connection
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -36,40 +37,41 @@ async def lifespan(app: FastAPI):
     # Startup
     # =========================================
     logger.info("Starting Gen UI Backend...")
-    
+
     # Connect to MongoDB
     try:
         await mongo_client.connect()
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
         # Continue without MongoDB for graceful degradation
-    
+
     # Connect to Redis
     try:
         await redis_client.connect()
     except Exception as e:
         logger.error(f"Failed to connect to Redis: {e}")
-    
+
     # Initialize vector store for module matching
     try:
         logger.info("Initializing vector store...")
         from app.vector import initialize_vector_store
+
         initialize_vector_store()
     except Exception as e:
         logger.warning(f"Failed to initialize vector store: {e}")
-    
+
     logger.info("Gen UI Backend started successfully")
-    
+
     yield  # Application runs here
-    
+
     # =========================================
     # Shutdown
     # =========================================
     logger.info("Shutting down Gen UI Backend...")
-    
+
     await mongo_client.disconnect()
     await redis_client.disconnect()
-    
+
     logger.info("Gen UI Backend shutdown complete")
 
 
@@ -118,6 +120,7 @@ app.include_router(events_router, prefix="/telemetry", tags=["Telemetry"])
 # Health Check Endpoints
 # =========================================
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """
@@ -126,18 +129,18 @@ async def health_check():
     """
     mongo_health = await mongo_client.health_check()
     redis_health = await redis_client.health_check()
-    
+
     all_healthy = (
-        mongo_health.get("status") == "connected" and
-        redis_health.get("status") == "connected"
+        mongo_health.get("status") == "connected"
+        and redis_health.get("status") == "connected"
     )
-    
+
     return {
         "status": "healthy" if all_healthy else "degraded",
         "services": {
             "mongodb": mongo_health,
             "redis": redis_health,
-        }
+        },
     }
 
 
@@ -154,6 +157,7 @@ async def root():
 # =========================================
 # SSE and WebSocket Endpoints
 # =========================================
+
 
 @app.get("/stream/{session_id}")
 async def stream(session_id: str):
@@ -178,6 +182,7 @@ async def websocket_endpoint(websocket, session_id: str):
 # Exception Handlers
 # =========================================
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors"""
@@ -194,4 +199,5 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

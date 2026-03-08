@@ -1,6 +1,7 @@
 from pydantic import BaseModel, HttpUrl
 from typing import Optional
 
+
 class Product(BaseModel):
     id: int
     store_domain: str

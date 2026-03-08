@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { Genre, GENRE_CSS_CLASSES, GENRE_NAMES, Variation } from '../schema/types';
+import { Genre, GENRE_CSS_CLASSES, GENRE_NAMES } from '../schema/types';
+import type { Variation } from '../schema/types';
 import type { CTAContent } from '../schema/data';
 
 interface CTAProps {

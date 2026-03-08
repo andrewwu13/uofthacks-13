@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { RenderingEngineProps } from '../schema/types';
 import { getModuleConfig } from './modules/ModuleRegistry';
 
