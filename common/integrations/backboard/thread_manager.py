@@ -12,10 +12,8 @@ MODEL_MAPPING = {
     "deepseek/deepseek-v3.2": ("openrouter", "deepseek/deepseek-v3.2"),
     "deepseek/deepseek-chat": ("openrouter", "deepseek/deepseek-chat"),
     "deepseek/deepseek-r1": ("openrouter", "deepseek/deepseek-r1"),
-    # Google models
-    "gemini-2.5-flash": ("google", "gemini-2.5-flash"),
-    "gemini-2.5-pro": ("google", "gemini-2.5-pro"),
     # Liquid models
+    "liquid/lfm-2.5-1.2b-instruct:free": ("openrouter", "liquid/lfm-2.5-1.2b-instruct:free"),
     "liquid/lfm-2.5-1.2b-thinking:free": ("openrouter", "liquid/lfm-2.5-1.2b-thinking:free"),
 }
 
@@ -72,11 +70,14 @@ class ThreadManager:
         try:
             response = await self._execute_inference(thread_id, model, prompt)
             
-            # Handle placeholder response
-            if response.strip() == "Assistant is processing...":
+            # Handle placeholder response with multiple retries
+            retries = 0
+            while response.strip() == "Assistant is processing..." and retries < 3:
                 import asyncio
-                print(f"[ThreadManager] Primary model '{model}' returned placeholder. Retrying in 2s...")
-                await asyncio.sleep(2)
+                retries += 1
+                delay = 2 * retries
+                print(f"[ThreadManager] Primary model '{model}' returned placeholder. Retry {retries}/3 in {delay}s...")
+                await asyncio.sleep(delay)
                 response = await self._execute_inference(thread_id, model, prompt)
             
             return response

@@ -1,95 +1,49 @@
 """
-Preference Reducer - Combines outputs from all three streams
+Preference Reducer - Synthesizes analysis into a final Vibe Summary
 """
 
-from typing import Dict, List
-
+import os
+from integrations.backboard.thread_manager import thread_manager
+from agents.config import agent_config
+from agents.concurrency_manager import llm_concurrency_manager
 
 class PreferenceReducer:
     """
-    Reduces outputs from motor state, context analyst, and variance auditor
-    into a unified JSON directive for layout generation.
+    Final Phase Agent: Synthesizes Short and Long context analysis into a 20-30 word vibe summary.
+    Uses Lock:1 concurrency.
     """
+    def __init__(self):
+        self.model = agent_config.context_analyst_model
+        
+        # Load prompt
+        prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "preference_reducer.txt")
+        with open(prompt_path, "r") as f:
+            self.system_prompt = f.read()
 
-    def reduce(
+    async def reduce(
         self,
-        motor_state: dict,
-        context_analysis: dict,
-        variance_audit: dict,
-        current_preferences: dict,
-    ) -> dict:
+        session_id: str,
+        short_context: str,
+        long_context: str
+    ) -> str:
         """
-        Combine stream outputs into unified preference directive.
-
-        Args:
-            motor_state: Output from motor state stream
-            context_analysis: Output from context analyst stream
-            variance_audit: Output from variance auditor stream
-            current_preferences: Current user preferences
-
-        Returns:
-            Unified preference directive for layout generation
+        Synthesize the two analysis outputs into a final vectorizable vibe summary.
         """
-        # Start with current preferences
-        updated_preferences = dict(current_preferences)
+        prompt = self.system_prompt.format(
+            short_context=short_context,
+            long_context=long_context
+        )
 
-        # Apply context analysis updates
-        preference_updates = context_analysis.get("preference_updates", {})
-        for genre, delta in preference_updates.items():
-            current = updated_preferences.get("genre_weights", {}).get(genre, 0.2)
-            updated_preferences.setdefault("genre_weights", {})[genre] = min(
-                1.0, max(0.0, current + delta)
-            )
-
-        # Apply variance audit signals
-        for signal in variance_audit.get("signals", []):
-            genre = signal.get("genre")
-            reward = signal.get("reward", 0)
-            if genre:
-                current = updated_preferences.get("genre_weights", {}).get(genre, 0.2)
-                # Apply reward with learning rate
-                updated_preferences.setdefault("genre_weights", {})[genre] = min(
-                    1.0, max(0.0, current + reward * 0.1)
+        async with llm_concurrency_manager:
+            try:
+                response = await thread_manager.run_with_model(
+                    session_id=session_id,
+                    model=self.model,
+                    prompt=prompt
                 )
-
-        # Adjust based on motor state
-        motor_state_adjustments = self._motor_state_to_preference(
-            motor_state.get("state", "idle")
-        )
-        for key, value in motor_state_adjustments.items():
-            updated_preferences[key] = value
-
-        # Calculate overall confidence
-        updated_preferences["interaction_confidence"] = self._calculate_confidence(
-            motor_state.get("confidence", 0),
-            context_analysis.get("confidence", 0),
-            variance_audit.get("signals", []),
-        )
-
-        return updated_preferences
-
-    def _motor_state_to_preference(self, state: str) -> dict:
-        """Convert motor state to preference adjustments"""
-        adjustments = {}
-
-        if state == "anxious" or state == "jittery":
-            # User seems overwhelmed - prefer simpler layouts
-            adjustments["interaction_style"] = "minimalist"
-        elif state == "determined":
-            # User knows what they want - show more options
-            adjustments["interaction_style"] = "detailed"
-
-        return adjustments
-
-    def _calculate_confidence(
-        self,
-        motor_confidence: float,
-        context_confidence: float,
-        signals: List[dict],
-    ) -> float:
-        """Calculate overall confidence score"""
-        signal_confidence = len(signals) * 0.1 if signals else 0
-        return min(1.0, (motor_confidence + context_confidence + signal_confidence) / 3)
-
+                return response.strip()
+            except Exception as e:
+                print(f"[PreferenceReducer] Error: {e}")
+                return "New user seeking a standard, clean experience with a subtle secondary interest in minimalist aesthetics."
 
 preference_reducer = PreferenceReducer()

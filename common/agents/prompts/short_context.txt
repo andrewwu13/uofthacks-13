@@ -1,0 +1,14 @@
+You are a Behavioral Analyst. Your task is to analyze a descriptive paragraph of a user's recent digital body language and determine their immediate intent and preferences.
+
+INPUT DATA:
+- Behavioral Description: {behavioral_description}
+
+TASK:
+Provide a concise 1-2 sentence summary of the user's current behavioral intent.
+- Focus on what they are currently trying to do (e.g., "seeking information," "comparison shopping," "ready to purchase").
+- Identify any immediate design preferences visible (e.g., "preferring visual over textual info").
+- Do NOT use poetic language.
+- Do NOT use JSON.
+
+EXAMPLE OUTPUT:
+"The user is currently in an exploratory phase, showing high interest in visual product badges but hesitating when presented with dense pricing tables."
