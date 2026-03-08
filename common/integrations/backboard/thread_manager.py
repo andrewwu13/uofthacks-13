@@ -15,9 +15,11 @@ MODEL_MAPPING = {
     # Google models
     "gemini-2.5-flash": ("google", "gemini-2.5-flash"),
     "gemini-2.5-pro": ("google", "gemini-2.5-pro"),
+    # Liquid models
+    "liquid/lfm-2.5-1.2b-thinking:free": ("openrouter", "liquid/lfm-2.5-1.2b-thinking:free"),
 }
 
-FALLBACK_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "liquid/lfm-2.5-1.2b-thinking:free"
 
 
 class ThreadManager:
@@ -63,12 +65,21 @@ class ThreadManager:
         prompt: str,
         memory_mode: str = "off",  # Argument preserved for API compatibility but ignored
     ) -> str:
-        """Run inference with specified model (Memory enforced OFF) with fallback"""
+        """Run inference with specified model (Memory enforced OFF) with fallback and retry logic"""
         thread_id = await self.get_or_create_thread(session_id)
 
         # 1. Attempt with primary model
         try:
-            return await self._execute_inference(thread_id, model, prompt)
+            response = await self._execute_inference(thread_id, model, prompt)
+            
+            # Handle placeholder response
+            if response.strip() == "Assistant is processing...":
+                import asyncio
+                print(f"[ThreadManager] Primary model '{model}' returned placeholder. Retrying in 2s...")
+                await asyncio.sleep(2)
+                response = await self._execute_inference(thread_id, model, prompt)
+            
+            return response
         except Exception as e:
             print(f"[ThreadManager] Primary model '{model}' failed: {e}")
 
@@ -78,9 +89,16 @@ class ThreadManager:
                     f"[ThreadManager] Retrying with fallback model '{FALLBACK_MODEL}'..."
                 )
                 try:
-                    return await self._execute_inference(
+                    response = await self._execute_inference(
                         thread_id, FALLBACK_MODEL, prompt
                     )
+                    
+                    if response.strip() == "Assistant is processing...":
+                        import asyncio
+                        await asyncio.sleep(2)
+                        response = await self._execute_inference(thread_id, FALLBACK_MODEL, prompt)
+                        
+                    return response
                 except Exception as fallback_error:
                     print(f"[ThreadManager] Fallback model failed: {fallback_error}")
 

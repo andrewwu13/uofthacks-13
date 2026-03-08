@@ -90,9 +90,14 @@ class RedisClient:
             await self.client.set(key, value)
             return True
 
-    async def delete(self, key: str):
-        """Delete key"""
-        await self.client.delete(key)
+    async def delete(self, *keys: str):
+        """Delete one or more keys"""
+        if keys:
+            await self.client.delete(*keys)
+
+    async def keys(self, pattern: str = "*") -> list[str]:
+        """Get keys matching pattern"""
+        return await self.client.keys(pattern)
 
     async def publish(self, channel: str, message: str):
         """Publish message to channel"""

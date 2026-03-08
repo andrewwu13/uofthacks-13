@@ -78,6 +78,7 @@ export const RenderingEngine: React.FC<RenderingEngineProps> = ({
             <div
               key={`${module.id}-${templateId}`}
               className={`module-wrapper ${config.className}`}
+              data-template-id={templateId}
             >
               <LayoutComponent
                 product={productData}

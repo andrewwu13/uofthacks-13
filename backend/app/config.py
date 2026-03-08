@@ -70,9 +70,9 @@ class Settings(BaseSettings):
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 
     # =========================================
-    # Google API (for Gemini embeddings)
+    # OpenRouter API (for text embeddings)
     # =========================================
-    GOOGLE_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
 
     # =========================================
     # Semantic Cache Configuration

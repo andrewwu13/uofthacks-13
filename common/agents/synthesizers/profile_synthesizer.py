@@ -6,13 +6,7 @@ Uses 80/20 weighting to produce a vectorizable User Profile JSON
 import json
 import re
 from typing import Dict, Any, List
-from shared.models.user_profile import (
-    UserProfile,
-    VisualPreferences,
-    InteractionPreferences,
-    BehavioralPreferences,
-    InferredProfile,
-)
+from shared.models.user_profile import UserProfile
 from integrations.backboard.thread_manager import thread_manager
 
 
@@ -64,86 +58,58 @@ class ProfileSynthesizer:
         context_analysis: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
-        Synthesize a User Profile from agent proposals.
-        Now async to support LLM synthesis call.
+        Synthesize a User Profile from agent proposals and raw metrics.
+        Returns a dictionary dumped from the UserProfile model.
         """
-        # Extract modules from both proposals
         stability_modules = self._extract_modules(stability_proposal)
         exploratory_modules = self._extract_modules(exploratory_proposal)
 
-        # Compute weighted genre preferences
         genre_scores = self._compute_weighted_genres(
             stability_modules, exploratory_modules
         )
 
-        # Derive visual preferences from genre scores
-        visual = self._derive_visual_preferences(genre_scores)
-
-        # Derive interaction preferences from motor state
-        interaction = self._derive_interaction_preferences(
-            motor_state, motor_confidence
-        )
-
-        # Derive behavioral preferences from context analysis
-        behavioral = self._derive_behavioral_preferences(context_analysis)
-
-        # Call LLM to infer rich narrative profile
-        inferred = await self._infer_profile_narrative(
+        vibe_summary = await self._generate_vibe_summary(
             session_id=session_id,
-            visual=visual,
-            interaction=interaction,
             motor_state=motor_state,
             genre_scores=genre_scores,
             context_insights=context_analysis.get("insights", ""),
         )
 
-        # Build the profile
-        profile = UserProfile(
-            visual=visual,
-            interaction=interaction,
-            behavioral=behavioral,
-            inferred=inferred,
-        )
-
+        profile = UserProfile(vibe_summary=vibe_summary)
         return profile.model_dump()
 
-    async def _infer_profile_narrative(
+    async def _generate_vibe_summary(
         self,
         session_id: str,
-        visual: VisualPreferences,
-        interaction: InteractionPreferences,
         motor_state: str,
         genre_scores: Dict[str, float],
         context_insights: str = "",
-    ) -> InferredProfile:
+    ) -> str:
         """
-        Call LLM to synthesize a rich persona from raw metrics.
+        Call LLM to synthesize a 20-30 word condensed persona summary.
+        Maintains an 80/20 balance between established preferences (exploitation)
+        and novelty (exploration).
         """
         prompt = f"""
-        Analyze these digital body language metrics to infer the user's deep aesthetic and behavioral persona.
+        Analyze the following digital body language metrics to produce a concise, analytical profile of the user's UI/UX preferences. This output will be vectorized to match against product catalogs, so you must use clear, descriptive, industry-standard design terms rather than poetic or narrative language.
         
         METRICS:
-        - Motor State: {motor_state} (e.g. anxious=hesitant/jittery, determined=linear/fast)
-        - Interaction Style: {interaction.model_dump()}
-        - Genre Affinity scores: {genre_scores}
-        - Computed Visuals: {visual.model_dump()}
+        - Motor State: {motor_state} (e.g., anxious indicates hesitation or erratic movement; determined indicates linear, decisive paths)
+        - Genre Affinity Scores: {genre_scores}
         - Context Insights: {context_insights}
         
         TASK:
-        Synthesize a semantic profile. BE SPECIFIC and BOLD. Do not default to "Generic Light Mode User". 
-        Look for contradictions (e.g. Anxious behavior but clicks "Loud" modules -> "Impulse Buyer needing guidance").
+        Output a single string of keywords and clear declarative phrases specifying the exact visual traits, layout density, typography style, and interaction patterns suited for this user. 
+        Do NOT output JSON. Do NOT write a narrative or use poetic language. 
         
-        OUTPUT JSON:
-        {{
-            "summary": "3-5 word evocative persona (e.g. 'Anxious Neobrutalist Explorer', 'Confident Minimalist Power-User')",
-            "habits": ["List 2-3 specific behavioral habits inferred from motor/interaction data"],
-            "visual_keywords": ["List 3-5 specific, distinct aesthetic keywords. AVOID generic terms like 'clean'. USE terms like 'Bauhaus', 'High-Contrast', 'Glassy', 'Typography-Heavy', 'Pastel-Goth', 'Cyberpunk', etc."]
-        }}
+        CRITICAL CONSTRAINT:
+        - Focus 80% on their established preferences based on the highest scored genres and motor state.
+        - Focus 20% on a secondary, exploratory style they might tolerate or be gently tested with.
+        
+        EXAMPLE: "High density layouts, dark mode color schemes, bold typography, neobrutalist styling; secondary tolerance for minimalist components with high whitespace and light themes."
         """
 
-        # Use configured model for synthesis
         from agents.config import agent_config
-
         model = agent_config.context_analyst_model
 
         try:
@@ -152,36 +118,11 @@ class ProfileSynthesizer:
                 model=model,
                 prompt=prompt,
             )
-
-            # Robust JSON extraction using regex
-            json_match = re.search(r"\{.*\}", response, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                try:
-                    data = json.loads(json_str)
-                except json.JSONDecodeError:
-                    # Fallback for single-quoted Python dicts often returned by weaker models
-                    import ast
-
-                    try:
-                        data = ast.literal_eval(json_str)
-                    except Exception as ast_e:
-                        print(f"AST parsing failed: {ast_e}")
-                        raise ValueError("JSON parsing failed")
-
-                return InferredProfile(**data)
-            else:
-                print(f"Warning: No JSON found in synthesis response")
-                raise ValueError("No JSON found")
-
+            return response.strip()
         except Exception as e:
             print(f"Profile synthesis error: {e}")
-            # Fallback
-            return InferredProfile(
-                summary=f"{interaction.decision_confidence.title()} {visual.color_scheme.title()}-Mode User",
-                habits=["Analysis failed - using fallback"],
-                visual_keywords=[visual.color_scheme, visual.density],
-            )
+            dominant_genre = max(genre_scores, key=genre_scores.get) if genre_scores else "base"
+            return f"Standard user exhibiting {motor_state} behavior, leaning towards a {dominant_genre} aesthetic."
 
     def _extract_modules(self, proposal: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract all modules from a proposal"""
@@ -217,86 +158,6 @@ class ProfileSynthesizer:
         total = sum(genre_counts.values()) or 1
         return {genre: score / total for genre, score in genre_counts.items()}
 
-    def _derive_visual_preferences(
-        self, genre_scores: Dict[str, float]
-    ) -> VisualPreferences:
-        """Derive visual preferences from weighted genre scores"""
-        if not genre_scores:
-            return VisualPreferences()
-
-        dominant_genre = max(genre_scores, key=genre_scores.get)
-        genre_visual = self.GENRE_TO_VISUAL.get(
-            dominant_genre, self.GENRE_TO_VISUAL["base"]
-        )
-
-        return VisualPreferences(
-            color_scheme=genre_visual.get("color_scheme", "light"),
-            corner_radius=genre_visual.get("corner_radius", "rounded"),
-            button_size=genre_visual.get("button_size", "medium"),
-            density=genre_visual.get("density", "medium"),
-            typography_weight=genre_visual.get("typography_weight", "regular"),
-        )
-
-    def _derive_interaction_preferences(
-        self,
-        motor_state: str,
-        motor_confidence: float,
-    ) -> InteractionPreferences:
-        """Derive interaction preferences from motor state"""
-        # Map motor state to decision confidence
-        confidence_map = {
-            "determined": "high",
-            "browsing": "medium",
-            "idle": "medium",
-            "anxious": "low",
-            "jittery": "low",
-        }
-
-        # Map motor state to exploration tolerance
-        exploration_map = {
-            "determined": "low",  # Knows what they want
-            "browsing": "high",  # Open to discovery
-            "idle": "medium",
-            "anxious": "low",  # Needs stability
-            "jittery": "medium",
-        }
-
-        # Map motor state to scroll behavior
-        scroll_map = {
-            "determined": "fast",
-            "browsing": "slow",
-            "idle": "moderate",
-            "anxious": "slow",
-            "jittery": "fast",
-        }
-
-        return InteractionPreferences(
-            decision_confidence=confidence_map.get(motor_state, "medium"),
-            exploration_tolerance=exploration_map.get(motor_state, "medium"),
-            scroll_behavior=scroll_map.get(motor_state, "moderate"),
-        )
-
-    def _derive_behavioral_preferences(
-        self,
-        context_analysis: Dict[str, Any],
-    ) -> BehavioralPreferences:
-        """Derive behavioral preferences from context analysis"""
-        confidence = context_analysis.get("confidence", 0.5)
-
-        if confidence > 0.7:
-            speed_accuracy = "accuracy"
-            depth = "deep"
-        elif confidence > 0.4:
-            speed_accuracy = "balanced"
-            depth = "moderate"
-        else:
-            speed_accuracy = "speed"
-            depth = "shallow"
-
-        return BehavioralPreferences(
-            speed_vs_accuracy=speed_accuracy,
-            engagement_depth=depth,
-        )
 
 
 profile_synthesizer = ProfileSynthesizer()

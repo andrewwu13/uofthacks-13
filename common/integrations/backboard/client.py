@@ -129,7 +129,7 @@ class BackboardClient:
         thread_id: str,
         content: str,
         llm_provider: str = "openrouter",
-        model_name: str = "deepseek/deepseek-v3.2",
+        model_name: str = "liquid/lfm-2.5-1.2b-thinking:free",
         memory: str = "Auto",
         stream: bool = False,
     ) -> dict:
@@ -160,7 +160,7 @@ class BackboardClient:
         thread_id: str,
         prompt: str,
         llm_provider: str = "openrouter",
-        model_name: str = "deepseek/deepseek-v3.2",
+        model_name: str = "liquid/lfm-2.5-1.2b-thinking:free",
         memory: str = "Auto",
     ) -> str:
         """Run inference on thread with specified model and return content"""

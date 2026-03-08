@@ -304,20 +304,18 @@ async def process_telemetry_batch(batch: EventBatch):
                         # Query vector store for recommended template ID
                         if user_profile_dict:
                             from app.vector import (
-                                get_recommended_template_id,
-                                get_recommended_genre,
+                                get_recommended_template_id_async,
+                                get_recommended_genre_async,
                             )
 
                             # Get Integer ID (0-35) for sampling
-                            suggested_id = get_recommended_template_id(
+                            suggested_id = await get_recommended_template_id_async(
                                 user_profile_dict
                             )
 
                             # Keep genre for logging purposes
-                            recommended_genre = get_recommended_genre(user_profile_dict)
-                            profile_summary = user_profile_dict.get("inferred", {}).get(
-                                "summary", "New User"
-                            )
+                            recommended_genre = await get_recommended_genre_async(user_profile_dict)
+                            profile_summary = user_profile_dict.get("vibe_summary", "New User")
 
                             logger.info(
                                 f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})"

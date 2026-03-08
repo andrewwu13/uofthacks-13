@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import sys
 import os
 
-# Ensure agents is in path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+# Ensure common is in path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../common")))
 
 
 class TestAgentState:
@@ -111,7 +111,8 @@ class TestPreferenceReductionNode:
 class TestProfileSynthesisNode:
     """Tests for profile_synthesis_node."""
 
-    def test_profile_synthesis_creates_profile(self):
+    @pytest.mark.asyncio
+    async def test_profile_synthesis_creates_profile(self):
         """Should create user_profile from proposals."""
         from agents.graph import profile_synthesis_node
 
@@ -126,12 +127,13 @@ class TestProfileSynthesisNode:
             "updated_preferences": {},
         }
 
-        result = profile_synthesis_node(state)
+        result = await profile_synthesis_node(state)
 
         assert "user_profile" in result
         assert result["user_profile"] is not None
 
-    def test_profile_synthesis_weights_stability(self):
+    @pytest.mark.asyncio
+    async def test_profile_synthesis_weights_stability(self):
         """Profile should weight stability at 80%."""
         from agents.graph import profile_synthesis_node
 
@@ -142,7 +144,7 @@ class TestProfileSynthesisNode:
             "updated_preferences": {},
         }
 
-        result = profile_synthesis_node(state)
+        result = await profile_synthesis_node(state)
 
         # 80/20 weighting means stability should dominate
         profile = result["user_profile"]
@@ -157,7 +159,7 @@ class TestRunLayoutGeneration:
     def mock_agent_graph(self):
         """Mock the compiled agent graph."""
         mock_graph = MagicMock()
-        mock_graph.invoke = MagicMock(
+        mock_graph.ainvoke = AsyncMock(
             return_value={
                 "user_profile": {
                     "visual": {"color_scheme": "dark"},
@@ -187,7 +189,7 @@ class TestRunLayoutGeneration:
     @pytest.mark.asyncio
     async def test_run_layout_generation_handles_errors(self, mock_agent_graph):
         """Should handle errors gracefully."""
-        mock_agent_graph.invoke.side_effect = Exception("LLM Error")
+        mock_agent_graph.ainvoke.side_effect = Exception("LLM Error")
 
         with patch("agents.graph.agent_graph", mock_agent_graph):
             from agents.graph import run_layout_generation
@@ -220,12 +222,16 @@ class TestContextAnalysisNode:
                 "response": '{"analysis": "browsing products", "confidence": 0.85}'
             }
         )
+        mock.run_with_model = AsyncMock(
+            return_value='{"analysis": "browsing products", "confidence": 0.85}'
+        )
+        mock.add_preference_context = AsyncMock()
         return mock
 
     @pytest.mark.asyncio
     async def test_context_analysis_with_mocked_llm(self, mock_thread_manager):
         """Context analysis should work with mocked LLM."""
-        with patch("agents.graph.thread_manager", mock_thread_manager):
+        with patch("agents.streams.context_analyst_stream.thread_manager", mock_thread_manager):
             from agents.graph import context_analysis_node
 
             state = {
@@ -236,7 +242,7 @@ class TestContextAnalysisNode:
                 "motor_confidence": 0.7,
             }
 
-            result = context_analysis_node(state)
+            result = await context_analysis_node(state)
 
             assert "context_analysis" in result
 
@@ -244,7 +250,8 @@ class TestContextAnalysisNode:
 class TestVarianceAuditNode:
     """Tests for variance_audit_node with mocked LLM."""
 
-    def test_variance_audit_empty_events(self):
+    @pytest.mark.asyncio
+    async def test_variance_audit_empty_events(self):
         """Should handle empty loud module events."""
         from agents.graph import variance_audit_node
 
@@ -254,7 +261,7 @@ class TestVarianceAuditNode:
             "motor_state": "idle",
         }
 
-        result = variance_audit_node(state)
+        result = await variance_audit_node(state)
 
         assert "variance_audit" in result
 
@@ -262,16 +269,21 @@ class TestVarianceAuditNode:
 class TestStabilityGenerationNode:
     """Tests for stability_generation_node."""
 
-    def test_stability_generation_returns_proposal(self):
+    @pytest.mark.asyncio
+    async def test_stability_generation_returns_proposal(self):
         """Should return stability_proposal."""
-        from agents.graph import stability_generation_node
+        with patch("agents.generators.stability_agent.thread_manager") as mock_thread_manager:
+            mock_thread_manager.add_preference_context = AsyncMock()
+            mock_thread_manager.run_with_model = AsyncMock(return_value='{"visual": {"color_scheme": "dark"}}')
 
-        state = {
-            "session_id": "test",
-            "updated_preferences": {"visual": {"color_scheme": "dark"}},
-        }
+            from agents.graph import stability_generation_node
 
-        result = stability_generation_node(state)
+            state = {
+                "session_id": "test",
+                "updated_preferences": {"visual": {"color_scheme": "dark"}},
+            }
+
+            result = await stability_generation_node(state)
 
         assert "stability_proposal" in result
 
@@ -279,17 +291,22 @@ class TestStabilityGenerationNode:
 class TestExploratoryGenerationNode:
     """Tests for exploratory_generation_node."""
 
-    def test_exploratory_generation_returns_proposal(self):
+    @pytest.mark.asyncio
+    async def test_exploratory_generation_returns_proposal(self):
         """Should return exploratory_proposal."""
-        from agents.graph import exploratory_generation_node
+        with patch("agents.generators.exploratory_agent.thread_manager") as mock_thread_manager:
+            mock_thread_manager.add_preference_context = AsyncMock()
+            mock_thread_manager.run_with_model = AsyncMock(return_value='{"visual": {"color_scheme": "dark"}}')
 
-        state = {
-            "session_id": "test",
-            "updated_preferences": {},
-            "variance_audit": {},
-        }
+            from agents.graph import exploratory_generation_node
 
-        result = exploratory_generation_node(state)
+            state = {
+                "session_id": "test",
+                "updated_preferences": {},
+                "variance_audit": {},
+            }
+
+            result = await exploratory_generation_node(state)
 
         assert "exploratory_proposal" in result
 
@@ -313,33 +330,6 @@ class TestGraphCreation:
 
         # Graph should be compiled and callable
         assert hasattr(graph, "invoke") or hasattr(graph, "get_graph")
-
-
-class TestProfileSynthesizer:
-    """Tests for profile_synthesizer module."""
-
-    def test_synthesize_profile_80_20_weighting(self):
-        """Should apply 80/20 weighting to stability/exploratory."""
-        from agents.synthesizers.profile_synthesizer import synthesize_profile
-
-        stability = {"visual": {"color_scheme": "dark", "corner_radius": "sharp"}}
-        exploratory = {"visual": {"color_scheme": "light", "corner_radius": "pill"}}
-
-        result = synthesize_profile(stability, exploratory)
-
-        assert result is not None
-        assert "visual" in result
-
-    def test_synthesize_profile_handles_missing_keys(self):
-        """Should handle missing keys gracefully."""
-        from agents.synthesizers.profile_synthesizer import synthesize_profile
-
-        stability = {"visual": {"color_scheme": "dark"}}
-        exploratory = {}
-
-        result = synthesize_profile(stability, exploratory)
-
-        assert result is not None
 
 
 if __name__ == "__main__":

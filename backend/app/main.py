@@ -22,9 +22,16 @@ from app.websocket.handlers import handle_websocket_connection
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Suppress verbose library logs
+logging.getLogger("pymongo").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("sse_starlette").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
@@ -48,15 +55,23 @@ async def lifespan(app: FastAPI):
     # Connect to Redis
     try:
         await redis_client.connect()
+        # Clear any stale agent locks from previous sessions/crashes
+        try:
+            lock_keys = await redis_client.keys("agent_lock:*")
+            if lock_keys:
+                await redis_client.delete(*lock_keys)
+                logger.info(f"Cleared {len(lock_keys)} stale agent locks")
+        except Exception as e:
+            logger.warning(f"Failed to clear stale locks: {e}")
     except Exception as e:
         logger.error(f"Failed to connect to Redis: {e}")
 
     # Initialize vector store for module matching
     try:
         logger.info("Initializing vector store...")
-        from app.vector import initialize_vector_store
+        from app.vector import initialize_vector_store_async
 
-        initialize_vector_store()
+        await initialize_vector_store_async()
     except Exception as e:
         logger.warning(f"Failed to initialize vector store: {e}")
 

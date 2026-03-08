@@ -16,10 +16,10 @@ class AgentConfig(BaseModel):
 
     # Model configuration - use Liquid LMF 2.5
     # Valid providers: cohere, anthropic, openrouter, aws-bedrock, openai, cerebras, google, xai, featherless
-    context_analyst_model: str = "liquid/lfm-2.5-1.2b-thinking:free"  # Cost-effective
-    variance_auditor_model: str = "liquid/lfm-2.5-1.2b-thinking:free"
-    stability_agent_model: str = "liquid/lfm-2.5-1.2b-thinking:free"
-    exploratory_agent_model: str = "liquid/lfm-2.5-1.2b-thinking:free"
+    context_analyst_model: str = "liquid/lfm-2.5-1.2b-instruct:free"  # Cost-effective
+    variance_auditor_model: str = "liquid/lfm-2.5-1.2b-instruct:free"
+    stability_agent_model: str = "liquid/lfm-2.5-1.2b-instruct:free"
+    exploratory_agent_model: str = "liquid/lfm-2.5-1.2b-instruct:free"
 
     # Thresholds
     stability_confidence_threshold: float = 0.7

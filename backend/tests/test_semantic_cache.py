@@ -13,7 +13,7 @@ import sys
 import os
 
 # Add cache directory to path - must be relative to backend/tests
-cache_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../cache"))
+cache_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../common/cache"))
 if cache_dir not in sys.path:
     sys.path.insert(0, cache_dir)
 
