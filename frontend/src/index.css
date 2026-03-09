@@ -54,8 +54,8 @@ html {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--app-bg);
-  color: var(--app-text);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.5;
 }
@@ -439,7 +439,7 @@ button {
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 240px;
+  grid-auto-rows: 280px;
   gap: 1.5rem;
   width: 100%;
   grid-auto-flow: dense;
@@ -522,10 +522,10 @@ button {
 }
 
 .bento-hero .title {
-  font-size: clamp(1rem, 2.8vw, 1.8rem);
+  font-size: 2.2rem;
   font-family: var(--font-heading);
   font-weight: 800;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   display: -webkit-box;
@@ -557,10 +557,10 @@ button {
 }
 
 .bento-wide .title {
-  font-size: clamp(0.85rem, 1.6vw, 1.3rem);
+  font-size: 1.5rem;
   font-family: var(--font-heading);
   font-weight: 700;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -589,11 +589,11 @@ button {
 }
 
 .bento-tall .title {
-  font-size: clamp(0.9rem, 1.8vw, 1.5rem);
+  font-size: 1.6rem;
   font-family: var(--font-heading);
   font-weight: 700;
   line-height: 1.2;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -609,36 +609,38 @@ button {
 .bento-small .product-img {
   height: 60%;
   border-radius: 24px 24px 0 0;
-  padding: 0.75rem;
+  padding: 1rem;
   background-color: #ebebeb;
 }
 
 .bento-small .bento-content {
   height: 40%;
-  padding: 0.875rem;
+  padding: 1.2rem;
   justify-content: center;
   overflow: hidden;
 }
 
-.bento-small .title {
-  font-size: 0.85rem;
+.bento-small .title,
+.bento-small .name {
+  font-size: 1rem;
   font-family: var(--font-body);
   font-weight: 600;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.3rem;
   line-clamp: 2;
   -webkit-line-clamp: 2;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.3;
+  color: var(--text-primary);
 }
 
 /* Price Display */
 .bento-item .price {
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   color: var(--accent, #a5b4fc);
-  margin-top: 0.35rem;
+  margin-top: 0.5rem;
   white-space: nowrap;
   transition: all 0.2s;
 }
@@ -700,7 +702,7 @@ button {
 .bento-item.genre-glassmorphism .price,
 .bento-item[data-genre="Glassmorphism"] .price {
   color: #a5b4fc !important;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* BRUTALISM: Bold Elements & High Contrast Lines */
@@ -714,6 +716,12 @@ button {
   -webkit-backdrop-filter: none;
 }
 
+.bento-item.genre-brutalism:hover,
+.bento-item[data-genre="Brutalism"]:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 12px 12px 0px #000000;
+}
+
 .bento-item.genre-brutalism .product-img,
 .bento-item[data-genre="Brutalism"] .product-img {
   border-radius: 0 !important;
@@ -721,11 +729,28 @@ button {
   background-color: transparent;
 }
 
+.bento-item.genre-brutalism::after,
+.bento-item[data-genre="Brutalism"]::after {
+  content: 'RAW / 01';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: #ff0000;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border: 3px solid #000;
+  z-index: 10;
+}
+
 .bento-item.genre-brutalism .title,
 .bento-item[data-genre="Brutalism"] .title {
   text-transform: uppercase;
   font-weight: 900;
   letter-spacing: -0.02em;
+  font-size: 1.6rem;
   color: #000000 !important;
 }
 
@@ -747,60 +772,93 @@ button {
 .bento-item.genre-neumorphism,
 .bento-item[data-genre="Neumorphism"] {
   border-radius: 24px;
-  background: #ebebeb;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 8px 8px 16px #cbd5e1, -8px -8px 16px #ffffff;
+  background: #f8fafc;
+  border: none;
+  box-shadow: 8px 8px 20px #d1d5db, -8px -8px 20px #ffffff;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
 .bento-item.genre-neumorphism .product-img,
 .bento-item[data-genre="Neumorphism"] .product-img {
-  background-color: #ebebeb;
+  background: transparent;
   border-radius: 24px 24px 0 0 !important;
+}
+
+.bento-item.genre-neumorphism .bento-content,
+.bento-item[data-genre="Neumorphism"] .bento-content {
+  background: transparent;
+}
+
+.bento-item.genre-neumorphism .title,
+.bento-item.genre-neumorphism .name,
+.bento-item[data-genre="Neumorphism"] .title,
+.bento-item[data-genre="Neumorphism"] .name {
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .bento-item.genre-neumorphism .price,
 .bento-item[data-genre="Neumorphism"] .price {
   color: #f97316 !important;
-  background: #ebebeb !important;
-  padding: 0.4rem 0.9rem;
-  border-radius: 50px;
+  background: #f8fafc !important;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
   font-weight: 800;
   font-size: 1rem;
-  box-shadow: inset 4px 4px 8px #cbd5e1, inset -4px -4px 8px #ffffff;
+  box-shadow: inset 4px 4px 8px #d9dddf, inset -4px -4px 8px #ffffff;
+  border: none;
   display: inline-block;
   margin-top: 0.5rem;
 }
 
-/* CYBERPUNK: Dark Tech Aesthetic */
+/* CYBERPUNK: Dark Tech Aesthetic, Cohesive Colors */
 .bento-item.genre-cyberpunk,
 .bento-item[data-genre="Cyberpunk"] {
-  border-radius: 4px;
-  border: 2px solid #00ffff;
-  background: #000;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.05);
+  background: linear-gradient(0deg, rgba(13, 13, 13, 0.95), rgba(18, 18, 18, 0.9)),
+      repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0, 255, 255, 0.01) 4px, rgba(0, 255, 255, 0.01) 5px);
   position: relative;
+  overflow: hidden;
+}
+
+.bento-item.genre-cyberpunk:hover,
+.bento-item[data-genre="Cyberpunk"]:hover {
+  border-color: rgba(0, 255, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 255, 255, 0.1);
+  transform: translateY(-10px) scale(1.03);
 }
 
 .bento-item.genre-cyberpunk .product-img,
 .bento-item[data-genre="Cyberpunk"] .product-img {
   background: transparent;
-  filter: hue-rotate(180deg) brightness(1.2);
+}
+
+.bento-item.genre-cyberpunk .bento-content,
+.bento-item[data-genre="Cyberpunk"] .bento-content {
+  background: transparent;
+  z-index: 2;
+}
+
+.bento-item.genre-cyberpunk .title,
+.bento-item[data-genre="Cyberpunk"] .title {
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+  letter-spacing: 1px;
 }
 
 .bento-item.genre-cyberpunk .price,
 .bento-item[data-genre="Cyberpunk"] .price {
-  color: #000 !important;
-  background: #fcee0a !important;
+  color: #fcee0a !important;
+  background: rgba(0, 0, 0, 0.5) !important;
   padding: 2px 8px;
+  border-left: 2px solid #fcee0a;
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 900;
-  display: inline-block;
-  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  font-weight: 800;
 }
 
-/* MINIMALIST: Huge Negative Space, Thin Lines */
+/* MINIMALIST: Huge Negative Space, Thin Lines, Ethereal Contrast */
 .bento-item.genre-minimalist {
   background: #fff;
   border: 1px solid #f0f0f0;
@@ -810,11 +868,23 @@ button {
   position: relative;
 }
 
+.bento-item.genre-minimalist:hover {
+  box-shadow: none;
+  transform: translateY(-8px) scale(1.02);
+  border-color: #d1d1d1;
+}
+
 .bento-item.genre-minimalist .product-img {
   background: transparent;
   border-radius: 0 !important;
   mix-blend-mode: multiply;
-  padding: 1.5rem;
+  padding: 2rem;
+}
+
+.bento-item.genre-minimalist .bento-content {
+  padding: 1.5rem 0 0 0;
+  align-items: center;
+  text-align: center;
 }
 
 .bento-item.genre-minimalist .title {
@@ -828,7 +898,23 @@ button {
   font-weight: 400;
   font-size: 0.9rem;
   color: #999;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
+}
+
+.bento-item.genre-minimalist::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: #000;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1), left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-item.genre-minimalist:hover::before {
+  width: 100%;
+  left: 0;
 }
 
 /* MONOPRINT: Clean Typography, Subtle Pattern */
@@ -840,13 +926,30 @@ button {
   overflow: hidden;
 }
 
+.bento-item.genre-monoprint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#fff 1.5px, transparent 1.5px);
+  background-size: 10px 10px;
+  opacity: 0.03;
+  pointer-events: none;
+}
+
 .bento-item.genre-monoprint .product-img {
   background: transparent;
-  padding: 1rem;
+}
+
+.bento-item.genre-monoprint .bento-content {
+  background: transparent;
+  margin: 0;
+  border-top: 1px solid #333;
+  padding-top: 1.5rem;
 }
 
 .bento-item.genre-monoprint .title {
   font-family: 'Courier New', Courier, monospace;
+  font-size: 1.2rem;
   color: #eee;
 }
 
@@ -854,9 +957,7 @@ button {
   color: #fff;
   font-family: 'Courier New', Courier, monospace;
   display: inline-block;
-  padding: 2px 4px;
-  background: #333;
-  margin-top: 0.4rem;
+  padding: 2px 0;
 }
 
 /* Responsive Bento Grid */
