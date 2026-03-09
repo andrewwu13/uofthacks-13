@@ -37,14 +37,15 @@ class SoftPreferences(BaseModel):
         default_factory=lambda: {"small": 0.33, "medium": 0.34, "large": 0.33}
     )
 
-    # Genre preferences (minimalist, neobrutalist, glassmorphism, etc.)
+    # Genre preferences (glassmorphism, brutalism, neumorphism, etc.)
     genre_weights: Dict[str, float] = Field(
         default_factory=lambda: {
-            "base": 0.4,
-            "minimalist": 0.15,
-            "neobrutalist": 0.15,
-            "glassmorphism": 0.15,
-            "loud": 0.15,
+            "glassmorphism": 0.167,
+            "brutalism": 0.167,
+            "neumorphism": 0.167,
+            "cyberpunk": 0.167,
+            "minimalist": 0.167,
+            "monoprint": 0.167,
         }
     )
 
@@ -62,7 +63,7 @@ class ComponentCandidate(BaseModel):
 
     component_id: str
     component_type: str  # e.g., "hero", "product-grid", "cta"
-    genre: str  # e.g., "minimalist", "neobrutalist"
+    genre: str  # e.g., "glassmorphism", "brutalism"
     variant: str  # e.g., "v1", "soft_v3"
 
     # Matching scores

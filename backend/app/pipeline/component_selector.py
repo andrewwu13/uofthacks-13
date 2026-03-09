@@ -22,11 +22,32 @@ logger = logging.getLogger(__name__)
 COMPONENT_CATALOG = [
     # Hero components
     ComponentCandidate(
-        component_id="hero_base_v1",
+        component_id="hero_glassmorphism_v1",
         component_type="hero",
-        genre="base",
+        genre="glassmorphism",
         variant="v1",
-        tags=["hero", "full-width"],
+        tags=["hero", "blur"],
+    ),
+    ComponentCandidate(
+        component_id="hero_brutalism_v1",
+        component_type="hero",
+        genre="brutalism",
+        variant="v1",
+        tags=["hero", "bold"],
+    ),
+    ComponentCandidate(
+        component_id="hero_neumorphism_v1",
+        component_type="hero",
+        genre="neumorphism",
+        variant="v1",
+        tags=["hero", "soft"],
+    ),
+    ComponentCandidate(
+        component_id="hero_cyberpunk_v1",
+        component_type="hero",
+        genre="cyberpunk",
+        variant="v1",
+        tags=["hero", "neon"],
     ),
     ComponentCandidate(
         component_id="hero_minimalist_v1",
@@ -36,33 +57,26 @@ COMPONENT_CATALOG = [
         tags=["hero", "clean"],
     ),
     ComponentCandidate(
-        component_id="hero_neobrutalist_v1",
+        component_id="hero_monoprint_v1",
         component_type="hero",
-        genre="neobrutalist",
+        genre="monoprint",
         variant="v1",
-        tags=["hero", "bold"],
-    ),
-    ComponentCandidate(
-        component_id="hero_glassmorphism_v1",
-        component_type="hero",
-        genre="glassmorphism",
-        variant="v1",
-        tags=["hero", "blur"],
-    ),
-    ComponentCandidate(
-        component_id="hero_loud_v1",
-        component_type="hero",
-        genre="loud",
-        variant="v1",
-        tags=["hero", "test"],
+        tags=["hero", "dark"],
     ),
     # Product Grid components
     ComponentCandidate(
-        component_id="grid_base_v1",
+        component_id="grid_glassmorphism_v1",
         component_type="product-grid",
-        genre="base",
+        genre="glassmorphism",
         variant="v1",
-        tags=["grid", "products"],
+        tags=["grid", "blur"],
+    ),
+    ComponentCandidate(
+        component_id="grid_brutalism_v1",
+        component_type="product-grid",
+        genre="brutalism",
+        variant="v1",
+        tags=["grid", "bold"],
     ),
     ComponentCandidate(
         component_id="grid_minimalist_v1",
@@ -71,25 +85,11 @@ COMPONENT_CATALOG = [
         variant="v1",
         tags=["grid", "clean"],
     ),
-    ComponentCandidate(
-        component_id="grid_neobrutalist_v1",
-        component_type="product-grid",
-        genre="neobrutalist",
-        variant="v1",
-        tags=["grid", "bold"],
-    ),
-    ComponentCandidate(
-        component_id="grid_glassmorphism_v1",
-        component_type="product-grid",
-        genre="glassmorphism",
-        variant="v1",
-        tags=["grid", "blur"],
-    ),
     # CTA components
     ComponentCandidate(
-        component_id="cta_base_v1",
+        component_id="cta_glassmorphism_v1",
         component_type="cta",
-        genre="base",
+        genre="glassmorphism",
         variant="v1",
         tags=["cta", "action"],
     ),
@@ -101,11 +101,11 @@ COMPONENT_CATALOG = [
         tags=["cta", "subtle"],
     ),
     ComponentCandidate(
-        component_id="cta_loud_v1",
+        component_id="cta_cyberpunk_v1",
         component_type="cta",
-        genre="loud",
+        genre="cyberpunk",
         variant="v1",
-        tags=["cta", "test", "high-contrast"],
+        tags=["cta", "test", "neon"],
     ),
 ]
 
@@ -168,10 +168,10 @@ class ComponentSelector:
 
             # Apply exploration budget
             if random.random() < constraints.exploration_budget:
-                # Pick a "loud" or exploratory component
-                loud_candidates = [c for c in type_candidates if c.genre == "loud"]
-                if loud_candidates:
-                    exploration.append(loud_candidates[0])
+                # Pick an exploratory component (cyberpunk = high visual energy)
+                explore_candidates = [c for c in type_candidates if c.genre == "cyberpunk"]
+                if explore_candidates:
+                    exploration.append(explore_candidates[0])
                     continue
 
             # Pick the best matching component

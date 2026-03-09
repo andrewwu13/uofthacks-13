@@ -90,21 +90,22 @@ class ConstraintBuilder:
         behavioral = reducer_output.behavioral
         visual = reducer_output.visual
 
-        # Start with base weights
+        # Start with equal weights for the 6 drafting-site genres
         weights = {
-            "base": 0.25,
-            "minimalist": 0.25,
-            "neobrutalist": 0.15,
             "glassmorphism": 0.20,
-            "loud": 0.15,
+            "brutalism": 0.15,
+            "neumorphism": 0.15,
+            "cyberpunk": 0.15,
+            "minimalist": 0.20,
+            "monoprint": 0.15,
         }
 
         # Adjust based on density preference
         if visual.density == "low":
             weights["minimalist"] += 0.15
-            weights["neobrutalist"] -= 0.10
+            weights["brutalism"] -= 0.10
         elif visual.density == "high":
-            weights["neobrutalist"] += 0.10
+            weights["brutalism"] += 0.10
             weights["minimalist"] -= 0.10
 
         # Adjust based on engagement depth
@@ -113,7 +114,7 @@ class ConstraintBuilder:
             weights["glassmorphism"] -= 0.05
         elif behavioral.engagement_depth == "deep":
             weights["glassmorphism"] += 0.10
-            weights["loud"] += 0.05
+            weights["cyberpunk"] += 0.05
 
         # Normalize to sum to 1.0
         total = sum(weights.values())

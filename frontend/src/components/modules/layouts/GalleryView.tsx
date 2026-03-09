@@ -6,8 +6,7 @@ export const GalleryView: React.FC<LayoutProps> = ({
     product,
     genre,
     onAddToCart,
-    className = '',
-    showDebug
+    className = ''
 }) => {
     return (
         <div
@@ -40,8 +39,6 @@ export const GalleryView: React.FC<LayoutProps> = ({
                     </button>
                 </div>
             </div>
-
-            {showDebug && <div className="debug-overlay">Gallery / {GENRE_NAMES[genre]}</div>}
         </div>
     );
 };

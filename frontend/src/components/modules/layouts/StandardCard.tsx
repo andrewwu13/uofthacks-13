@@ -14,8 +14,7 @@ export const StandardCard: React.FC<LayoutProps> = ({
     product,
     genre,
     onAddToCart,
-    className = '',
-    showDebug
+    className = ''
 }) => {
     const price = parseFloat(product.price.toString()) || 0;
 
@@ -67,11 +66,6 @@ export const StandardCard: React.FC<LayoutProps> = ({
                 Add to Cart
             </button>
 
-            {showDebug && (
-                <div className="debug-overlay">
-                    ID: {product.id} | {GENRE_NAMES[genre]}
-                </div>
-            )}
         </div>
     );
 };

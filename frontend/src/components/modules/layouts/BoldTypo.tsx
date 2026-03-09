@@ -7,7 +7,6 @@ export const BoldTypo: React.FC<LayoutProps> = ({
     genre,
     onAddToCart,
     className = '',
-    showDebug
 }) => {
     return (
         <div
@@ -39,7 +38,6 @@ export const BoldTypo: React.FC<LayoutProps> = ({
                 GET IT
             </button>
 
-            {showDebug && <div className="debug-overlay">Bold / {GENRE_NAMES[genre]}</div>}
         </div>
     );
 };

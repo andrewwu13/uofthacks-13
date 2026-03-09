@@ -63,7 +63,7 @@ async def user_profile_to_vector_async(profile_dict: dict) -> FeatureVector:
 async def get_recommended_template_id_async(profile_dict: dict) -> int:
     """
     Get the recommended integer Template ID for a user profile.
-    Searches for the best matching module from the 36-module catalog.
+    Searches for the best matching module from the 24-module catalog.
     """
     from app.vector.vector_store import search_similar_modules
     from app.vector.module_vectors import decode_module_id
@@ -71,7 +71,7 @@ async def get_recommended_template_id_async(profile_dict: dict) -> int:
     # Convert profile to vector
     profile_vec = await user_profile_to_vector_async(profile_dict)
 
-    # Query vector store for similar modules (search all 36)
+    # Query vector store for similar modules (search all 24)
     results = search_similar_modules(profile_vec, top_k=5)
 
     recommendations = results.get("recommended", [])
@@ -102,6 +102,6 @@ async def get_recommended_genre_async(profile_dict: dict) -> str:
     recommendations = results.get("recommended", [])
     if recommendations:
         metadata = vector_store.metadata.get(recommendations[0].id, {})
-        return metadata.get("genre", "base")
+        return metadata.get("genre", "glassmorphism")
         
-    return "base"
+    return "glassmorphism"

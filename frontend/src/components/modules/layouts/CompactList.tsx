@@ -6,8 +6,7 @@ export const CompactList: React.FC<LayoutProps> = ({
     product,
     genre,
     onAddToCart,
-    className = '',
-    showDebug
+    className = ''
 }) => {
     const price = parseFloat(product.price.toString()) || 0;
 
@@ -55,12 +54,6 @@ export const CompactList: React.FC<LayoutProps> = ({
                     </div>
                 </div>
             </div>
-
-            {showDebug && (
-                <div className="debug-overlay">
-                    {GENRE_NAMES[genre]} / Compact
-                </div>
-            )}
         </div>
     );
 };

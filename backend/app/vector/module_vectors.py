@@ -1,12 +1,12 @@
 """
 Module Vectors - Semantic feature vectors for all UI modules
 
-Each module has a 768-dimensional text embedding that captures its
+Each module has a 1536-dimensional text embedding that captures its
 visual and behavioral characteristics for similarity matching.
 
-Module ID System (36 Modules):
-- ID = (genre * 6) + layout
-- This gives us 6 genres * 6 layouts = 36 unique modules
+Module ID System (24 Modules):
+- ID = (genre * 4) + bentoType
+- This gives us 6 genres * 4 bento types = 24 unique modules
 """
 
 from typing import Dict, List, Optional
@@ -22,33 +22,31 @@ logger = logging.getLogger(__name__)
 # ID ENCODING (Matches Frontend)
 # ============================================
 
-MODULES_PER_GENRE = 6
+MODULES_PER_GENRE = 4
 
 GENRE_MAP = {
-    "base": 0,
-    "minimalist": 1,
-    "neobrutalist": 2,
-    "glassmorphism": 3,
-    "loud": 4,
-    "cyber": 5,
+    "glassmorphism": 0,
+    "brutalism": 1,
+    "neumorphism": 2,
+    "cyberpunk": 3,
+    "minimalist": 4,
+    "monoprint": 5,
 }
 
 GENRE_NAMES = {v: k for k, v in GENRE_MAP.items()}
 
 LAYOUT_MAP = {
-    "standard": 0,
-    "compact": 1,
-    "featured": 2,
-    "gallery": 3,
-    "technical": 4,
-    "bold": 5,
+    "hero": 0,
+    "wide": 1,
+    "tall": 2,
+    "small": 3,
 }
 
 LAYOUT_NAMES = {v: k for k, v in LAYOUT_MAP.items()}
 
 
 def encode_module_id(genre: str, layout: str) -> int:
-    """Encode genre and layout into integer ID (0-35)"""
+    """Encode genre and layout into integer ID (0-23)"""
     g_idx = GENRE_MAP.get(genre, 0)
     l_idx = LAYOUT_MAP.get(layout, 0)
     return (g_idx * MODULES_PER_GENRE) + l_idx
@@ -60,8 +58,8 @@ def decode_module_id(module_id: int) -> dict:
     layout_idx = module_id % MODULES_PER_GENRE
 
     return {
-        "genre": GENRE_NAMES.get(genre_idx, "base"),
-        "layout": LAYOUT_NAMES.get(layout_idx, "standard"),
+        "genre": GENRE_NAMES.get(genre_idx, "glassmorphism"),
+        "layout": LAYOUT_NAMES.get(layout_idx, "hero"),
     }
 
 
@@ -73,7 +71,7 @@ class ModuleMetadata(BaseModel):
     description: str
     tags: List[str]
 
-    # Feature vector (768 dimensions for Gemini API embeddings)
+    # Feature vector (1536 dimensions for text-embedding-3-small)
     feature_vector: List[float] = Field(default_factory=lambda: [0.0] * FEATURE_DIMENSIONS)
 
 
@@ -87,65 +85,53 @@ def module_to_text(module: ModuleMetadata) -> str:
     return f"{module.description} Keywords: {tags_str}"
 
 
-# Semantic Descriptions per Genre/Layout (Highly Discriminating Terminology)
+# Semantic Descriptions per Genre/Layout (Bento Types from Drafting Site)
 DESCRIPTIONS = {
-    "base": {
-        "standard": "Standard commodity software UI. Generic functional patterns, system-default contrast, and conservative visual weighting with average alignment.",
-        "compact": "Utility-first dense list view for basic data scanning. Default system-font styling with neutral technical focus.",
-        "featured": "Generic highlight pattern using traditional bordering. Balanced density for standard promotional emphasis on neutral background.",
-        "gallery": "Commodity grid layout with standard padding. Predictable image-to-text ratios for generic browsing experiences.",
-        "technical": "Utility data sheet. Primary focus on tabular representation and standard legibility without any stylistic enhancements.",
-        "bold": "Generic typographic emphasis. Standard bold headers over plain gray or white background containers.",
+    "glassmorphism": {
+        "hero": "Large frosted-glass hero panel with translucent gradient background. Directional semi-transparent borders glow brighter on top and left edges. Product image fills 60% above centered bold serif title and accent-colored price on blurred dark premium backdrop.",
+        "wide": "Horizontal frosted-glass split card with text on left and product image on right. Semi-transparent gradient surface with ethereal border glow, backdrop blur, and soft indigo accent price. Modern luxurious presentation with depth layering effects.",
+        "tall": "Vertical frosted-glass column with product image stacked above content. Translucent gradient panel with directional border lighting and inset glow shadows. Text-shadowed title with accent-colored price on deep purple-blue blurred background.",
+        "small": "Compact frosted-glass thumbnail card with small product image over minimal content. Semi-transparent gradient background with soft glowing borders and indigo price accent. Elegant minimized glass panel with backdrop blur depth.",
+    },
+    "brutalism": {
+        "hero": "Large raw brutalist hero card with thick 3px black borders and hard 8px offset shadow. Pastel yellow background with product image bordered by heavy black stroke. Uppercase bold 900-weight title below. Red 'RAW / 01' badge in corner. Anti-design aggressive aesthetic.",
+        "wide": "Horizontal brutalist split card with thick black borders and hard offset shadow. Pastel yellow background, text-left product-right layout. Uppercase heavy typography with yellow accent price. Red corner badge. Zero border-radius raw aesthetic.",
+        "tall": "Vertical brutalist column with 3px black borders and 8px hard shadow. Product image with black bottom border above bold uppercase content. Pastel yellow background with aggressive high-contrast typography. Red 'RAW / 01' corner badge.",
+        "small": "Compact brutalist thumbnail with thick black 3px borders and hard offset shadow. Sharp zero border-radius with pastel yellow background. Bold uppercase title and yellow price. Red tag badge. Raw anti-design pop-art energy.",
+    },
+    "neumorphism": {
+        "hero": "Large soft-extruded hero card with subtle dual-direction shadows creating depth. Light #f8fafc background with transparent product image. Warm dark title with orange accent price displayed in inset-shadow pill. Soft plastic premium aesthetic.",
+        "wide": "Horizontal soft-extruded split card with dual directional shadows. Light background with transparent product image on right. Dark-contrast title and orange inset-shadow price pill. Rounded 24px corners with premium raised surface feel.",
+        "tall": "Vertical neumorphic column with extruded shadow on light background. Product image with transparent backdrop above dark text content. Orange accent price in recessed pill with inset shadows. Soft premium tactile surface aesthetic.",
+        "small": "Compact neumorphic thumbnail with subtle dual shadows on light background. Transparent product image above dark title. Orange price in soft inset-shadow pill container. Rounded corners with clean raised-surface feel.",
+    },
+    "cyberpunk": {
+        "hero": "Large dark cyberpunk hero with scanline repeating-gradient overlay. Cyan/teal semi-transparent border with subtle neon glow shadow. Transparent product image over near-black surface. Cyan glowing title with yellow accent price and left border pip. Futuristic terminal aesthetic.",
+        "wide": "Horizontal dark cyberpunk card with scanline gradient texture. Cyan border with tech glow and transparent product image. Left-side cyan title with letter-spacing and neon text-shadow. Yellow price with left border accent. Dark grid-line underlayer.",
+        "tall": "Vertical cyberpunk column with dark scanline background texture and cyan border glow. Product image on transparent dark surface above neon-colored title text. Yellow accent price with border-left pip. Futuristic hacker-terminal visual style.",
+        "small": "Compact dark cyberpunk card with repeating scanline gradient and cyan border. Transparent product image above neon text. Yellow price accent with left pip border on near-black surface. Technical terminal miniature module.",
     },
     "minimalist": {
-        "standard": "Ultra-low density design with massive whitespace. Crisp thin-weight typography, whisper-thin lines, and highly streamlined clinical aesthetic.",
-        "compact": "Streamlined horizontal list item with high spatial gutters. Sophisticated thin typography and zero visual clutters or noise.",
-        "featured": "Stark isolated product focus with extreme whitespace buffers. Clinical editorial layout featuring crisp, high-hierarchy thin typography.",
-        "gallery": "Ultra-clean grid. High whitespace gutters and massive breathing room with lean lines and restrained information density.",
-        "technical": "Architectural monospaced layout with clinical precision. High-contrast whitespace and minimal borders for a curated look.",
-        "bold": "Editorial magazine layout with massive thin-weight headers. Premium low-density design with high whitespace and crisp visual hierarchy.",
+        "hero": "Large ultra-clean hero card with pure white background and near-invisible thin borders. Product image with multiply blend-mode on transparent surface with generous 2rem padding. Lightweight 300-weight lowercase title with very muted gray price. Expanding black underline on hover. Maximum negative space.",
+        "wide": "Horizontal minimalist split card with white background and whisper-thin border. Product image with mix-blend-mode multiply. Centered lightweight lowercase title text and muted gray price. Zero border-radius with extreme whitespace. Hover reveals expanding underline.",
+        "tall": "Vertical minimalist column with stark white background and barely visible border. Multiply-blended product image above centered lightweight lowercase title. Very muted gray price with generous whitespace buffers. Clean editorial clinical aesthetic.",
+        "small": "Compact minimalist thumbnail with white background and ultra-thin border. Mix-blend-mode multiply on product image. Light-weight lowercase title and muted gray price. Zero border-radius with maximum breathing room. Hover expanding underline.",
     },
-    "neobrutalist": {
-        "standard": "Aggressive raw design system. Harsh high-contrast black borders, hard-offset drop shadows, and high-saturation flat primary colors. Anti-design aesthetic.",
-        "compact": "High-contrast rigid bordering with thick black strokes. Saturated color blocks and unpolished hard-offset-shadow visual effects.",
-        "featured": "Dissonant attention-grabbing layout with massive black outlines. Saturated clashing colors and raw brutalist visual energy and thick strokes.",
-        "gallery": "Clipped image containers with hard black borders. Jagged layout patterns with high-contrast pop-art aesthetics and thick outlines.",
-        "technical": "Raw HTML/System-default style with thick black borders. High-contrast monospaced information with aggressive styling and hard shadows.",
-        "bold": "Huge black-outline typography. Saturated color backdrops with massive high-contrast strokes and raw unpolished aesthetic.",
-    },
-    "glassmorphism": {
-        "standard": "Vibrant translucent frosted-glass panels with blurred textures. High-tech blur-behind effects and glowing light-diffused gradients with soft glows.",
-        "compact": "Semi-transparent glowing glass bar. Diffused backlight effects with modern frosted surfacing and high-tech glass-blur layers.",
-        "featured": "Massive glowing frosted glass pane with soft inner glows. Futuristic translucent layers and high-vibrancy color gradients with light diffusion.",
-        "gallery": "Floating transparent glass cards with blurred background visibility. Multi-layered light-refracted surfaces and ethereal gradients with soft glows.",
-        "technical": "Heads-up display (HUD) on translucent glass. Technical data-overlays with frosted textures and refined back-lighting and neon accents.",
-        "bold": "Vibrant etched glass typography. Large headers on semi-transparent blurred surfaces with high-vibrancy glow effects and light diffusion.",
-    },
-    "loud": {
-        "standard": "High-saturation energy neon gradients and aggressive chroma. Vibrant high-impact visuals with chaotic energy and loud visual density and massive noise.",
-        "compact": "Condensed blast of high-saturation colors. Noisy high-energy density with aggressive vibrance and loud maximalist typographic focus.",
-        "featured": "Explosive product spotlight using saturated neon gradients. Maximum visual noise and high-decibel design impact with vibration effects.",
-        "gallery": "Glitch-filtered high-saturation images. Intense vibrant color chaos with energetic patterns and maximalist visual styling and neon noise.",
-        "technical": "Neon-accented technical metrics. Frantic high-saturation markers and overwhelming energy with high-density visual markers and chaotic chroma.",
-        "bold": "Maximalist streetwear aesthetic. Saturated background colors with screaming text and high-energy vibrant typography and massive visual noise.",
-    },
-    "cyber": {
-        "standard": "Dark-mode technical terminal. Green/Neon phosphor scanline effects, monospaced fonts, and industrial hacker aesthetics with tactical UI.",
-        "compact": "CLI-inspired horizontal output. Monospaced console text with high-tech system-default styling and dark-mode focus and phosphor glow.",
-        "featured": "Complex dark-mode data hub. Intensive tactical UI with high-density monospaced metrics and futuristic system readouts and green neon.",
-        "gallery": "Tactical image decoding interface. Dark-mode grid with industrial scanlines and high-tech terminal navigation and monospaced labels.",
-        "technical": "Military-grade tactical readout. Dark background with high-density monospaced data and high-tech weaponry interface aesthetics and code-based UI.",
-        "bold": "Industrial technical warnings. High-contrast dark-mode typography with technical alerts and futuristic sci-fi labels and tactical icons.",
+    "monoprint": {
+        "hero": "Large dark monoprint hero card with #111 background and subtle radial dot-matrix pattern overlay. Product image on transparent dark background above Courier monospace title separated by thin #333 divider border. White price in monospace font. Industrial print-press aesthetic.",
+        "wide": "Horizontal dark monoprint card with dot-matrix radial gradient pattern. #111 background with thin gray border. Product image on right, Courier monospace title on left separated by subtle content divider. White monospace price. Clean typographic print design.",
+        "tall": "Vertical monoprint column with dark background and halftone dot-pattern overlay. Product image above monospace Courier title separated by thin #333 top-border. White monospace price on dark surface. Print-media industrial aesthetic with 4px border-radius.",
+        "small": "Compact dark monoprint thumbnail with radial dot pattern overlay on #111 background. Courier New monospace title and white price below thin divider. Industrial newsprint-inspired compact module with subtle halftone texture.",
     },
 }
 
 TAGS = {
-    "base": ["standard-ui", "familiar", "neutral-contrast"],
-    "minimalist": ["low-density", "high-whitespace", "thin-typography"],
-    "neobrutalist": ["high-contrast", "thick-borders", "flat-color"],
-    "glassmorphism": ["frosted-glass", "translucent", "blur-effect"],
-    "loud": ["high-saturation", "vibrant-gradients", "intense-energy"],
-    "cyber": ["dark-mode", "monospaced", "hud-layout"],
+    "glassmorphism": ["frosted-glass", "translucent", "blur-effect", "gradient-border", "premium-depth"],
+    "brutalism": ["thick-borders", "hard-shadow", "raw-badge", "uppercase", "high-contrast", "anti-design"],
+    "neumorphism": ["soft-shadow", "extruded", "light-background", "inset-pill", "tactile", "premium-surface"],
+    "cyberpunk": ["dark-mode", "scanline", "neon-glow", "cyan", "terminal", "futuristic"],
+    "minimalist": ["whitespace", "lightweight-font", "multiply-blend", "underline-hover", "lowercase", "clinical"],
+    "monoprint": ["dot-matrix", "dark-background", "monospace", "courier", "print-press", "industrial"],
 }
 
 
@@ -164,7 +150,7 @@ def create_module(genre: str, layout: str) -> ModuleMetadata:
 
 
 def generate_catalog() -> List[ModuleMetadata]:
-    """Generate all 36 semantic modules"""
+    """Generate all 24 semantic modules (6 genres × 4 bento types)"""
     catalog = []
     for genre in GENRE_MAP.keys():
         for layout in LAYOUT_MAP.keys():
@@ -172,7 +158,7 @@ def generate_catalog() -> List[ModuleMetadata]:
     return catalog
 
 
-# The Complete 36-Module Catalog
+# The Complete 24-Module Catalog
 MODULE_CATALOG: List[ModuleMetadata] = generate_catalog()
 
 
@@ -218,17 +204,15 @@ def get_module_by_id(module_id: int) -> Optional[ModuleMetadata]:
     return None
 
 def get_modules_by_type(module_type: str) -> List[ModuleMetadata]:
-    """Get modules by layout type."""
+    """Get modules by layout type (bento type)."""
     type_mapping = {
-        "hero": "featured",
-        "product-grid": "gallery",
-        "cta": "bold",
-        "standard": "standard",
-        "compact": "compact",
-        "featured": "featured",
-        "gallery": "gallery",
-        "technical": "technical",
-        "bold": "bold",
+        "hero": "hero",
+        "wide": "wide",
+        "tall": "tall",
+        "small": "small",
+        "featured": "hero",
+        "product-grid": "small",
+        "cta": "wide",
     }
     layout = type_mapping.get(module_type.lower(), module_type.lower())
     return [m for m in MODULE_CATALOG if m.layout == layout]

@@ -66,9 +66,9 @@ function App() {
   const [batchCount, setBatchCount] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Pool of Template IDs (Integers 0-35)
-  // Initialize with diverse IDs - one per genre (0=base, 6=minimalist, 12=neobrutalist, etc.)
-  const idPoolRef = useRef<number[]>([0, 6, 12, 18, 24, 30]); // Start diverse for variety
+  // Pool of Template IDs (Integers 0-71)
+  // Initialize with diverse IDs from all 6 drafting genres
+  const idPoolRef = useRef<number[]>([0, 12, 24, 36, 48, 60]);
   const idPool = idPoolRef.current;
 
   // SSE layout updates handler - AGGRESSIVE EVOLUTION
@@ -256,7 +256,6 @@ function App() {
       <RenderingEngine
         modules={modules}
         onModuleClick={handleModuleClick}
-        showDebugInfo={true}
         onLoadMore={handleLoadMore}
         isLoading={isLoadingMore}
         hasMore={true}

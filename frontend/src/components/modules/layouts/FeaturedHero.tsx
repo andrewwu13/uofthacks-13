@@ -6,8 +6,7 @@ export const FeaturedHero: React.FC<LayoutProps> = ({
     product,
     genre,
     onAddToCart,
-    className = '',
-    showDebug
+    className = ''
 }) => {
     return (
         <div
@@ -35,8 +34,6 @@ export const FeaturedHero: React.FC<LayoutProps> = ({
                     </button>
                 </div>
             </div>
-
-            {showDebug && <div className="debug-overlay">Featured / {GENRE_NAMES[genre]}</div>}
         </div>
     );
 };

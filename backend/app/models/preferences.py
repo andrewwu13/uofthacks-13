@@ -9,11 +9,12 @@ from typing import Optional, List
 class GenreWeights(BaseModel):
     """Probability weights for each UI genre"""
 
-    base: float = 0.2
-    minimalist: float = 0.2
-    neobrutalist: float = 0.2
-    glassmorphism: float = 0.2
-    loud: float = 0.2
+    glassmorphism: float = 0.167
+    brutalism: float = 0.167
+    neumorphism: float = 0.167
+    cyberpunk: float = 0.167
+    minimalist: float = 0.167
+    monoprint: float = 0.167
 
 
 class ColorPreferences(BaseModel):
