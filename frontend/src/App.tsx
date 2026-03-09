@@ -21,7 +21,6 @@ import { GENRE_NAMES } from './schema/types';
 import { initTelemetry } from './tracking';
 import type { TelemetryBatch } from './tracking';
 import { useSSELayout } from './hooks/useSSELayout';
-import type { LayoutUpdate } from './hooks/useSSELayout';
 
 // Backend API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -61,15 +60,15 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   // Track last clicked product for display
-  const [lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
+  const [_lastClicked, setLastClicked] = useState<{ product: ShopifyProduct; genre: Genre } | null>(null);
 
   // Telemetry tracking state
   const [batchCount, setBatchCount] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  // Pool of Template IDs (Integers 0-35)
-  // Initialize with diverse IDs - one per genre (0=base, 6=minimalist, 12=neobrutalist, etc.)
-  const idPoolRef = useRef<number[]>([0, 6, 12, 18, 24, 30]); // Start diverse for variety
+  // Pool of Template IDs (Integers 0-71)
+  // Initialize with diverse IDs from all 6 drafting genres
+  const idPoolRef = useRef<number[]>([0, 12, 24, 36, 48, 60]);
   const idPool = idPoolRef.current;
 
   // SSE layout updates handler - AGGRESSIVE EVOLUTION
@@ -201,42 +200,7 @@ function App() {
     console.log('Loaded 3 more products, total:', modules.length + 3);
   }, [allProducts, modules.length]);
 
-  // Shuffle genres for all modules
-  const handleGenreShuffle = () => {
-    setModules(prev => prev.map(module => ({
-      ...module,
-      id: `${module.id}-reshuffled-${Date.now()}`,
-      genre: Math.floor(Math.random() * 6) as Genre
-    })));
-    setLastClicked(null);
-  };
 
-  // Reset to initial state
-  const handleReset = () => {
-    if (allProducts.length > 0) {
-      const initialProducts = allProducts.slice(0, 6);
-      const initialModules = createProductModules(initialProducts);
-      setModules(initialModules);
-    }
-    setLastClicked(null);
-  };
-
-  // Group by genre
-  const handleGroupByGenre = () => {
-    if (allProducts.length < 6) return;
-
-    const genreModules: ProductModule[] = [];
-    for (let genre = 0; genre < 6; genre++) {
-      const product = allProducts[genre % allProducts.length];
-      genreModules.push({
-        id: `genre-showcase-${genre}-${Date.now()}`,
-        product,
-        genre: genre as Genre
-      });
-    }
-    setModules(genreModules);
-    setLastClicked(null);
-  };
 
   // Loading state
   if (isInitialLoading) {
@@ -292,7 +256,6 @@ function App() {
       <RenderingEngine
         modules={modules}
         onModuleClick={handleModuleClick}
-        showDebugInfo={true}
         onLoadMore={handleLoadMore}
         isLoading={isLoadingMore}
         hasMore={true}

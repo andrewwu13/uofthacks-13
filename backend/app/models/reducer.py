@@ -1,6 +1,7 @@
 """
 Reducer output models matching the canonical user preference JSON
 """
+
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from datetime import datetime
@@ -8,6 +9,7 @@ from datetime import datetime
 
 class VisualTraits(BaseModel):
     """Visual preference traits from reducer"""
+
     color_scheme: Literal["dark", "light", "vibrant"] = "light"
     corner_radius: Literal["sharp", "rounded", "pill"] = "rounded"
     button_size: Literal["small", "medium", "large"] = "medium"
@@ -17,6 +19,7 @@ class VisualTraits(BaseModel):
 
 class InteractionTraits(BaseModel):
     """Interaction behavior traits from reducer"""
+
     decision_confidence: Literal["low", "medium", "high"] = "medium"
     exploration_tolerance: Literal["low", "medium", "high"] = "medium"
     scroll_behavior: Literal["slow", "moderate", "fast"] = "moderate"
@@ -24,6 +27,7 @@ class InteractionTraits(BaseModel):
 
 class BehavioralTraits(BaseModel):
     """Behavioral pattern traits from reducer"""
+
     speed_vs_accuracy: Literal["speed", "balanced", "accuracy"] = "balanced"
     engagement_depth: Literal["shallow", "moderate", "deep"] = "moderate"
 
@@ -33,6 +37,7 @@ class ReducerOutput(BaseModel):
     Canonical reducer output matching the system spec.
     This is emitted by the preference_reducer after processing agent streams.
     """
+
     visual: VisualTraits = Field(default_factory=VisualTraits)
     interaction: InteractionTraits = Field(default_factory=InteractionTraits)
     behavioral: BehavioralTraits = Field(default_factory=BehavioralTraits)
@@ -40,6 +45,7 @@ class ReducerOutput(BaseModel):
 
 class ReducerContext(BaseModel):
     """Context metadata associated with each reducer output"""
+
     session_id: str
     page_type: str = "home"
     device_type: Literal["desktop", "mobile", "tablet"] = "desktop"
@@ -48,6 +54,7 @@ class ReducerContext(BaseModel):
 
 class ReducerPayload(BaseModel):
     """Complete reducer payload with context"""
+
     output: ReducerOutput
     context: ReducerContext
 
@@ -58,5 +65,5 @@ def create_default_reducer_output() -> ReducerOutput:
     return ReducerOutput(
         visual=VisualTraits(),
         interaction=InteractionTraits(),
-        behavioral=BehavioralTraits()
+        behavioral=BehavioralTraits(),
     )

@@ -3,6 +3,7 @@ from app.models.telemetry import MotorTelemetry, TelemetryEventsBatch
 
 logger = logging.getLogger(__name__)
 
+
 class TelemetryService:
     async def process_motor_telemetry(self, data: MotorTelemetry):
         # In a real app, this would save to a DB or stream to a processing engine
@@ -15,5 +16,6 @@ class TelemetryService:
         # TODO: Store specific event preferences (e.g., liked categories) in persistent DB
         logger.info(f"Received {len(data.events)} events for session {data.session_id}")
         return {"status": "success", "session_id": data.session_id}
+
 
 telemetry_service = TelemetryService()

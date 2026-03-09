@@ -20,6 +20,8 @@ export class InteractionTracker {
   private config: InteractionTrackerConfig;
   private isTracking: boolean = false;
   private activeHovers: Map<string, HoverState> = new Map();
+  private activeFocus: Map<string, number> = new Map();
+  private selectionTimeout: number | null = null;
 
   constructor(config: Partial<InteractionTrackerConfig> & Pick<InteractionTrackerConfig, 'onEvent'>) {
     this.config = {
@@ -37,6 +39,7 @@ export class InteractionTracker {
     document.addEventListener('mouseleave', this.handleMouseLeave, { capture: true });
     document.addEventListener('focusin', this.handleFocus, { capture: true });
     document.addEventListener('focusout', this.handleBlur, { capture: true });
+    document.addEventListener('selectionchange', this.handleSelectionChange);
 
     console.log('[InteractionTracker] Started tracking');
   }
@@ -50,6 +53,9 @@ export class InteractionTracker {
     document.removeEventListener('mouseleave', this.handleMouseLeave, { capture: true });
     document.removeEventListener('focusin', this.handleFocus, { capture: true });
     document.removeEventListener('focusout', this.handleBlur, { capture: true });
+    document.removeEventListener('selectionchange', this.handleSelectionChange);
+
+    if (this.selectionTimeout) clearTimeout(this.selectionTimeout);
 
     console.log('[InteractionTracker] Stopped tracking');
   }
@@ -85,7 +91,18 @@ export class InteractionTracker {
   }
 
   private getElementMetadata(element: Element): Record<string, unknown> {
+    // Find nearest template ID by traversing up
+    let templateElement: Element | null = element;
+    let templateId: string | null = null;
+    while (templateElement && !templateId) {
+      if (typeof templateElement.hasAttribute === 'function' && templateElement.hasAttribute('data-template-id')) {
+        templateId = templateElement.getAttribute('data-template-id');
+      }
+      templateElement = templateElement.parentElement;
+    }
+
     return {
+      template_id: templateId ? parseInt(templateId, 10) : undefined,
       module_type: element.getAttribute('data-module-type'),
       module_genre: element.getAttribute('data-module-genre'),
       is_loud: element.getAttribute('data-module-loud') === 'true',
@@ -137,17 +154,18 @@ export class InteractionTracker {
 
     const targetId = this.getTargetId(target);
     const hoverState = this.activeHovers.get(targetId);
+    let hoverDuration: number | undefined;
 
     if (hoverState) {
-      const duration = Date.now() - hoverState.startTime;
+      hoverDuration = Date.now() - hoverState.startTime;
 
       // Only emit if hover was significant
-      if (duration >= this.config.hoverThreshold) {
+      if (hoverDuration >= this.config.hoverThreshold) {
         this.config.onEvent({
           ts: Math.floor(Date.now() / 1000),
           type: 'hover',
           target_id: targetId,
-          duration_ms: duration,
+          duration_ms: hoverDuration,
           metadata: this.getElementMetadata(target),
         });
       }
@@ -159,6 +177,8 @@ export class InteractionTracker {
       ts: Math.floor(Date.now() / 1000),
       type: 'hover-leave',
       target_id: targetId,
+      duration_ms: hoverDuration,
+      metadata: this.getElementMetadata(target),
     });
   };
 
@@ -166,10 +186,13 @@ export class InteractionTracker {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
 
+    const targetId = this.getTargetId(target);
+    this.activeFocus.set(targetId, Date.now());
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'focus',
-      target_id: this.getTargetId(target),
+      target_id: targetId,
       metadata: this.getElementMetadata(target),
     });
   };
@@ -178,10 +201,59 @@ export class InteractionTracker {
     const target = this.findTrackableParent(e.target as Element);
     if (!target) return;
 
+    const targetId = this.getTargetId(target);
+    const focusStartTime = this.activeFocus.get(targetId);
+    let focusDuration: number | undefined;
+
+    if (focusStartTime) {
+      focusDuration = Date.now() - focusStartTime;
+      this.activeFocus.delete(targetId);
+    }
+
     this.config.onEvent({
       ts: Math.floor(Date.now() / 1000),
       type: 'blur',
-      target_id: this.getTargetId(target),
+      target_id: targetId,
+      duration_ms: focusDuration,
+      metadata: this.getElementMetadata(target),
     });
+  };
+
+  private handleSelectionChange = (): void => {
+    if (this.selectionTimeout) {
+      clearTimeout(this.selectionTimeout);
+    }
+
+    // Debounce to wait for user to finish selecting
+    this.selectionTimeout = window.setTimeout(() => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) return;
+
+      const selectedText = selection.toString().trim();
+      if (!selectedText) return;
+
+      const anchorNode = selection.anchorNode;
+      if (!anchorNode) return;
+
+      const targetRaw = anchorNode.nodeType === Node.ELEMENT_NODE
+        ? (anchorNode as Element)
+        : anchorNode.parentElement;
+
+      if (!targetRaw) return;
+
+      const target = this.findTrackableParent(targetRaw);
+      if (!target) return;
+
+      this.config.onEvent({
+        ts: Math.floor(Date.now() / 1000),
+        type: 'text_select',
+        target_id: this.getTargetId(target),
+        metadata: {
+          ...this.getElementMetadata(target),
+          selected_text: selectedText.substring(0, 500), // truncate just in case
+          selection_length: selectedText.length,
+        },
+      });
+    }, 500); // 500ms debounce
   };
 }

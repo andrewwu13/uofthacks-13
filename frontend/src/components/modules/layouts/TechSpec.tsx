@@ -6,8 +6,7 @@ export const TechSpec: React.FC<LayoutProps> = ({
     product,
     genre,
     onAddToCart,
-    className = '',
-    showDebug
+    className = ''
 }) => {
     return (
         <div
@@ -16,7 +15,6 @@ export const TechSpec: React.FC<LayoutProps> = ({
         >
             <div className="tech-header">
                 <div className="tech-id">REF: {String(product.id).substring(0, 8)}</div>
-                <div className="tech-status">IN_STOCK</div>
             </div>
 
             <div className="tech-grid">
@@ -53,7 +51,6 @@ export const TechSpec: React.FC<LayoutProps> = ({
                 [INITIATE_ORDER]
             </button>
 
-            {showDebug && <div className="debug-overlay">Tech / {GENRE_NAMES[genre]}</div>}
         </div>
     );
 };

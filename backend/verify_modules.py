@@ -7,7 +7,11 @@ backend_root = os.path.dirname(current_dir)
 sys.path.append(backend_root)
 
 try:
-    from app.vector.module_vectors import MODULE_CATALOG, decode_module_id, get_module_by_id
+    from app.vector.module_vectors import (
+        MODULE_CATALOG,
+        decode_module_id,
+        get_module_by_id,
+    )
     from app.vector.profile_vectors import get_recommended_template_id
     from app.vector.vector_store import initialize_vector_store
 
@@ -24,7 +28,7 @@ try:
 
     # 3. Check specific modules
     print("\n--- Sample Modules ---")
-    samples = [0, 6, 35] # Base/Standard, Minimalist/Standard, Cyber/Bold
+    samples = [0, 6, 35]  # Base/Standard, Minimalist/Standard, Cyber/Bold
     for sid in samples:
         m = get_module_by_id(sid)
         if m:
@@ -36,13 +40,10 @@ try:
 
     # 4. Test Recommendation
     print("\n--- Recommendation Test ---")
-    dummy_profile = {
-        "visual_preference": "minimalist",
-        "browsing_speed": "fast"
-    }
+    dummy_profile = {"visual_preference": "minimalist", "browsing_speed": "fast"}
     # Note: Vector search requires profile conversion which might need dependencies like numpy
     # We assume 'user_profile_to_vector' works.
-    
+
     try:
         rec_id = get_recommended_template_id(dummy_profile)
         rec_data = decode_module_id(rec_id)

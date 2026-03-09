@@ -1,6 +1,7 @@
 """
 Telemetry event models matching frontend payload
 """
+
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any, Union
 
@@ -15,9 +16,9 @@ class MotorTelemetryPayload(BaseModel):
 
 class TelemetryEvent(BaseModel):
     ts: float
-    type: str # e.g., "click", "click_rage", "hover"
+    type: str  # e.g., "click", "click_rage", "hover"
     target_id: str
-    position: Optional[Dict[str, float]] = None # {x, y}
+    position: Optional[Dict[str, float]] = None  # {x, y}
     duration_ms: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -26,6 +27,7 @@ class EventBatch(BaseModel):
     """
     Batch payload for POST /telemetry/events
     """
+
     session_id: str
     device_type: Literal["desktop", "mobile", "tablet"]
     timestamp: float

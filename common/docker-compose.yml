@@ -1,0 +1,105 @@
+services:
+  # Frontend
+  frontend:
+    build:
+      context: ..
+      dockerfile: common/Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000/ws
+    networks:
+      - genui-network
+
+  # Backend API
+  backend:
+    build:
+      context: ..
+      dockerfile: common/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - mongodb
+      - redpanda
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongodb:27017
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+    env_file:
+      - ../.env
+    networks:
+      - genui-network
+
+  # Background workers
+  workers:
+    build:
+      context: ..
+      dockerfile: common/Dockerfile.workers
+    depends_on:
+      - redis
+      - mongodb
+      - redpanda
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongodb:27017
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+    env_file:
+      - ../.env
+    networks:
+      - genui-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - genui-network
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    hostname: mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - genui-network
+
+  # RedPanda (Kafka-compatible)
+  redpanda:
+    image: redpandadata/redpanda:latest
+    hostname: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+    ports:
+      - "9094:9092"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    networks:
+      - genui-network
+
+volumes:
+  redis-data:
+  mongo-data:
+  redpanda-data:
+
+
+networks:
+  genui-network:
+    driver: bridge

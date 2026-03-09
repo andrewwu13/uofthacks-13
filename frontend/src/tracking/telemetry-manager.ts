@@ -23,7 +23,7 @@ export interface TelemetryManagerConfig {
 function detectDeviceType(): DeviceType {
   const ua = navigator.userAgent.toLowerCase();
   const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  
+
   if (/tablet|ipad|playbook|silk/.test(ua) || (hasTouchScreen && window.innerWidth >= 768)) {
     return 'tablet';
   }
@@ -55,7 +55,7 @@ export class TelemetryManager {
       sessionId: config.sessionId || generateSessionId(),
       flushInterval: config.flushInterval || 5000,
       enableConsoleLog: config.enableConsoleLog ?? true,
-      onBatch: config.onBatch || (() => {}),
+      onBatch: config.onBatch || (() => { }),
     };
 
     const deviceType = detectDeviceType();
@@ -69,13 +69,13 @@ export class TelemetryManager {
       onFlush: (batch) => this.handleBatchFlush(batch),
     });
 
-    // Initialize trackers
     this.mouseTracker = new MouseTracker({
       sampleInterval: 16,
       bufferSize: 60,
       onFlush: (samples, t0, dt) => {
         this.eventBuffer.addMotorSamples(samples, t0, dt);
       },
+      onEvent: (event) => this.addEvent(event),
     });
 
     this.scrollTracker = new ScrollTracker({
@@ -123,7 +123,7 @@ export class TelemetryManager {
 
   private addEvent(event: TelemetryEvent): void {
     this.eventBuffer.addEvent(event);
-    
+
     if (this.config.enableConsoleLog) {
       // Highlight frustration events in console
       if (['click_rage', 'dead_click', 'click_error', 'excessive_scroll'].includes(event.type)) {
@@ -136,7 +136,7 @@ export class TelemetryManager {
 
   private handleBatchFlush(batch: TelemetryBatch): void {
     this.batchCount++;
-    
+
     if (this.config.enableConsoleLog) {
       console.group(`[TelemetryManager] Batch #${this.batchCount} flushed`);
       console.log('Session ID:', batch.session_id);
@@ -145,19 +145,19 @@ export class TelemetryManager {
       if (batch.motor) {
         console.log('Motor Samples:', batch.motor.samples.length);
       }
-      
+
       // Log event breakdown
       const eventTypes = batch.events.reduce((acc, e) => {
         acc[e.type] = (acc[e.type] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
       console.log('Event Breakdown:', eventTypes);
-      
+
       // Log full items for debugging if needed
       if (batch.events.length > 0) {
         console.dir(batch.events);
       }
-      
+
       console.groupEnd();
     }
 

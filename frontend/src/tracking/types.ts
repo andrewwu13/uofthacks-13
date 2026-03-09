@@ -19,7 +19,7 @@ export interface MotorTelemetryPayload {
 }
 
 /** Interaction event types */
-export type EventType = 
+export type EventType =
   | 'click'
   | 'hover'
   | 'hover-enter'
@@ -33,7 +33,10 @@ export type EventType =
   | 'dead_click'
   | 'click_error'
   | 'excessive_scroll'
-  | 'visibility_change';
+  | 'visibility_change'
+  | 'text_select'
+  | 'module_transition'
+  | 'hesitation';
 
 /** Single telemetry event */
 export interface TelemetryEvent {

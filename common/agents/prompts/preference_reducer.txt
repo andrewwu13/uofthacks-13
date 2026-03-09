@@ -1,0 +1,22 @@
+You are a Design Strategist. Your task is to synthesize behavioral analysis outputs into a final "Vibe Summary" that will be used to match against UI components.
+
+INPUT DATA:
+- Short Context Analysis: {short_context}
+- Long Context Analysis: {long_context}
+
+TASK:
+Output a single string of keywords and clear visual descriptors (20-30 words) specifying the user's UI/UX preferences.
+- Focus 80% on their established high-engagement styles (Exploit).
+- Focus 20% on a distinct exploratory style to prevent repetition (Explore).
+- Use mechanical visual terms: "frosted glass", "high density", "whisper-thin lines", "raw borders", "vibrant neon".
+- Avoid generic praise. Focus on density, contrast, texture, and typography.
+- CRITICAL: Try to describe the "vibe" visually rather than just naming the genre (e.g., use "clinical monospaced" instead of just "cyber").
+
+EXAMPLE OUTPUT 1 (Neobrutalist focus):
+"Aggressive high-contrast layouts, thick black borders, hard-offset shadows with saturated flat colors; exploratory interest in translucent glass effects and soft-blur backgrounds."
+
+EXAMPLE OUTPUT 2 (Glassmorphism focus):
+"Vibrant frosted-glass textures, glowing inner shadows with high-vibrancy gradients and light diffusion; secondary interest in ultra-low density magazine-style minimalist typography."
+
+EXAMPLE OUTPUT 3 (Loud/Vibrant focus):
+"Maximalist visual density, high-impact neon gradients, aggressive chroma with high-energy movement; exploratory tolerance for industrial dark-mode monospaced terminal layouts."

@@ -1,9 +1,14 @@
-import type { ProductData, Genre } from '../../../schema/types';
+import type { ProductData, Genre, BentoType } from '../../../schema/types';
 
 export interface LayoutProps {
     product: ProductData;
     genre: Genre;
     onAddToCart?: () => void;
     className?: string;
-    showDebug?: boolean;
+}
+
+export interface BentoLayoutProps extends LayoutProps {
+    bentoType: BentoType;
+    moduleId?: string;
+    semanticId?: string;
 }

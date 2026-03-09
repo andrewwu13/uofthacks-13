@@ -1,0 +1,6 @@
+﻿NAME                IMAGE                          COMMAND                  SERVICE    CREATED         STATUS         PORTS
+common-backend-1    common-backend                 "uvicorn app.main:apΓÇª"   backend    7 minutes ago   Up 2 minutes   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+common-frontend-1   common-frontend                "/docker-entrypoint.ΓÇª"   frontend   7 minutes ago   Up 2 minutes   0.0.0.0:3000->80/tcp, [::]:3000->80/tcp
+common-mongodb-1    mongo:7                        "docker-entrypoint.sΓÇª"   mongodb    4 minutes ago   Up 2 minutes   0.0.0.0:27018->27017/tcp, [::]:27018->27017/tcp
+common-redis-1      redis:7-alpine                 "docker-entrypoint.sΓÇª"   redis      7 minutes ago   Up 2 minutes   6379/tcp
+common-redpanda-1   redpandadata/redpanda:latest   "/entrypoint.sh redpΓÇª"   redpanda   7 minutes ago   Up 2 minutes   9092/tcp

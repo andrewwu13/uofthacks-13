@@ -2,18 +2,13 @@
 Vector Module Exports
 
 Provides vector-based similarity search for matching user profiles
-to UI modules in a shared 12-dimensional feature space.
+to UI modules using semantic text embeddings.
 """
 
 from app.vector.feature_schema import (
     FEATURE_DIMENSIONS,
     FeatureVector,
-    FeatureIndex,
-    encode_value,
     normalize_vector,
-    create_zero_vector,
-    GENRE_VECTORS,
-    ENCODINGS,
 )
 
 from app.vector.module_vectors import (
@@ -22,50 +17,43 @@ from app.vector.module_vectors import (
     module_to_vector,
     get_module_by_id,
     get_modules_by_type,
+    initialize_module_vectors_async,
 )
 
 from app.vector.profile_vectors import (
-    profile_to_vector,
-    traits_to_vector,
-    user_profile_to_vector,
-    get_recommended_genre,
-    get_recommended_template_id,
+    user_profile_to_vector_async,
+    get_recommended_genre_async,
+    get_recommended_template_id_async,
 )
 
 from app.vector.vector_store import (
     VectorStore,
     SearchResult,
     vector_store,
-    initialize_vector_store,
+    initialize_vector_store_async,
     search_similar_modules,
 )
 
 __all__ = [
     # Schema
     "FEATURE_DIMENSIONS",
-    "FeatureVector", 
-    "FeatureIndex",
-    "encode_value",
+    "FeatureVector",
     "normalize_vector",
-    "create_zero_vector",
-    "GENRE_VECTORS",
-    "ENCODINGS",
     # Modules
     "ModuleMetadata",
     "MODULE_CATALOG",
     "module_to_vector",
     "get_module_by_id",
     "get_modules_by_type",
+    "initialize_module_vectors_async",
     # Profiles
-    "profile_to_vector",
-    "traits_to_vector",
-    "user_profile_to_vector",
-    "get_recommended_genre",
-    "get_recommended_template_id",
+    "user_profile_to_vector_async",
+    "get_recommended_genre_async",
+    "get_recommended_template_id_async",
     # Store
     "VectorStore",
     "SearchResult",
     "vector_store",
-    "initialize_vector_store",
+    "initialize_vector_store_async",
     "search_similar_modules",
 ]
