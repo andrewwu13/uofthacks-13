@@ -16,7 +16,7 @@ interface MotorState {
 
 function classifyMotorState(state: MotorState): { label: string; color: string } {
   const { speed, jerk } = state;
-  
+
   // Classification based on velocity/acceleration thresholds
   if (speed < 50 && jerk < 1000) {
     return { label: 'Focused', color: '#22c55e' };
@@ -50,7 +50,7 @@ export function TrackingDemo() {
         setBatchCount(c => c + 1);
       },
     });
-    
+
     setTelemetry(manager);
 
     // Update motor state in real-time
@@ -113,17 +113,17 @@ export function TrackingDemo() {
 
       {/* Frustration Signal Tests */}
       <section className="test-modules">
-        <h2 style={{color: '#ef4444'}}>😤 Frustration Signal Tests</h2>
+        <h2 style={{ color: '#ef4444' }}>😤 Frustration Signal Tests</h2>
         <p className="test-instructions">Test click rage, dead clicks, and errors.</p>
-        
+
         <div className="module-grid">
           {/* Click Rage Test */}
           <div className="test-module" data-module-id="test_rage">
             <h3>Click Rage Test</h3>
             <p>Click me rapidly (3+ times in 1s)</p>
-            <button 
+            <button
               data-track-id="rage_btn"
-              onClick={() => {}}
+              onClick={() => { }}
             >
               Don't Click Me!
             </button>
@@ -134,7 +134,7 @@ export function TrackingDemo() {
             <h3>Dead Click Test</h3>
             <p>This looks like a button but isn't</p>
             {/* Visual fake button but no interactivity */}
-            <div 
+            <div
               style={{
                 background: '#3b82f6',
                 color: 'white',
@@ -155,7 +155,7 @@ export function TrackingDemo() {
           <div className="test-module" data-module-id="test_error">
             <h3>JS Error Test</h3>
             <p>Clicking this throws an error</p>
-            <button 
+            <button
               data-track-id="error_btn"
               onClick={() => {
                 throw new Error("Simulated Click Error!");
@@ -164,12 +164,12 @@ export function TrackingDemo() {
               Throw Error
             </button>
           </div>
-          
-           {/* Context Test */}
-           <div className="test-module" data-module-id="test_context">
+
+          {/* Context Test */}
+          <div className="test-module" data-module-id="test_context">
             <h3>Context Test</h3>
             <p>Hover over the price</p>
-            <div 
+            <div
               style={{ fontSize: '1.5rem', fontWeight: 'bold', fontFamily: 'monospace' }}
               data-track-context="price"
               data-track-id="test_price"
@@ -186,24 +186,24 @@ export function TrackingDemo() {
         <p className="test-instructions">
           Hover, click, and scroll to generate events. Check the browser console for telemetry batches.
         </p>
-        
+
         <div className="module-grid">
-          {/* Module A - Base Style */}
-          <div 
-            className="test-module test-module--base"
+          {/* Module A - Minimalist Style */}
+          <div
+            className="test-module test-module--minimalist"
             data-module-id="module_A"
             data-module-type="product-card"
-            data-module-genre="base"
+            data-module-genre="minimalist"
             data-module-loud="false"
           >
             <div className="module-image"></div>
-            <h3>Base Style Card</h3>
-            <p>Neutral, clean aesthetic</p>
-            <button data-track-id="cta_base">Shop Now</button>
+            <h3>Minimalist Style Card</h3>
+            <p>Clean typography, whitespace</p>
+            <button data-track-id="cta_minimalist">Shop Now</button>
           </div>
 
           {/* Module B - Minimalist Style */}
-          <div 
+          <div
             className="test-module test-module--minimalist"
             data-module-id="module_B"
             data-module-type="product-card"
@@ -216,22 +216,22 @@ export function TrackingDemo() {
             <button data-track-id="cta_minimalist">Explore</button>
           </div>
 
-          {/* Module C - Neobrutalist Style (LOUD) */}
-          <div 
-            className="test-module test-module--neobrutalist"
+          {/* Module C - Brutalist Style */}
+          <div
+            className="test-module test-module--brutalist"
             data-module-id="module_C"
             data-module-type="product-card"
-            data-module-genre="neobrutalist"
+            data-module-genre="brutalist"
             data-module-loud="true"
           >
             <div className="module-image"></div>
-            <h3>NEOBRUTALIST</h3>
+            <h3>BRUTALIST</h3>
             <p>Bold, raw aesthetic</p>
-            <button data-track-id="cta_neo">BUY NOW</button>
+            <button data-track-id="cta_brutalist">BUY NOW</button>
           </div>
 
           {/* Module D - Glassmorphism Style */}
-          <div 
+          <div
             className="test-module test-module--glassmorphism"
             data-module-id="module_D"
             data-module-type="product-card"
@@ -244,32 +244,32 @@ export function TrackingDemo() {
             <button data-track-id="cta_glass">View Details</button>
           </div>
 
-          {/* Module E - LOUD A/B Test */}
-          <div 
-            className="test-module test-module--loud"
+          {/* Module E - Brutalist A/B Test */}
+          <div
+            className="test-module test-module--brutalist"
             data-module-id="module_E"
             data-module-type="cta"
-            data-module-genre="loud"
+            data-module-genre="brutalist"
             data-module-loud="true"
           >
-            <div className="loud-badge">A/B TEST</div>
-            <h3>🔥 LOUD MODULE 🔥</h3>
+            <div className="brutalist-badge">A/B TEST</div>
+            <h3>🔥 BRUTALIST MODULE 🔥</h3>
             <p>High-contrast test variant</p>
-            <button data-track-id="cta_loud">TAKE ACTION</button>
+            <button data-track-id="cta_brutalist">TAKE ACTION</button>
           </div>
 
-          {/* Module F - Another Base for comparison */}
-          <div 
-            className="test-module test-module--base"
+          {/* Module F - Another Minimalist for comparison */}
+          <div
+            className="test-module test-module--minimalist"
             data-module-id="module_F"
             data-module-type="product-card"
-            data-module-genre="base"
+            data-module-genre="minimalist"
             data-module-loud="false"
           >
             <div className="module-image"></div>
-            <h3>Another Base Card</h3>
+            <h3>Another Minimalist Card</h3>
             <p>Control variant</p>
-            <button data-track-id="cta_base_2">Learn More</button>
+            <button data-track-id="cta_minimalist_2">Learn More</button>
           </div>
         </div>
       </section>
@@ -278,19 +278,19 @@ export function TrackingDemo() {
       <section className="scroll-test">
         <h2>Scroll Test Section</h2>
         <p>Scroll through this area to test scroll tracking and dwell time detection.</p>
-        
+
         <div className="scroll-content">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div 
+            <div
               key={i}
               className="scroll-item"
               data-module-id={`scroll_item_${i}`}
               data-module-type="content-block"
-              data-module-genre="base"
+              data-module-genre="minimalist"
               data-module-loud={i === 4 ? 'true' : 'false'}
             >
               <h4>Content Block #{i}</h4>
-              {i === 4 && <span className="loud-indicator">LOUD</span>}
+              {i === 4 && <span className="brutalist-indicator">BRUTALIST</span>}
               <p>This is a scrollable content block for testing viewport enter/leave events.</p>
             </div>
           ))}

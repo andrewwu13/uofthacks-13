@@ -28,9 +28,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     // Genre-specific button text
     const getButtonText = () => {
         switch (genre) {
-            case Genre.NEOBRUTALIST: return 'BUY NOW';
-            case Genre.LOUD: return 'ADD TO CART 🔥';
-            case Genre.CYBER: return '>> ACQUIRE';
             case Genre.MINIMALIST: return 'Add';
             default: return 'Add to Cart';
         }
@@ -38,9 +35,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
     // Genre-specific badge
     const getBadge = () => {
-        if (genre === Genre.LOUD) return { text: 'HOT', show: true };
-        if (genre === Genre.NEOBRUTALIST) return { text: 'NEW', show: true };
-        if (genre === Genre.CYBER) return { text: 'LIVE', show: true };
         return { text: '', show: false };
     };
 

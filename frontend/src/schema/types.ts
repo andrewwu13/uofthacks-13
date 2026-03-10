@@ -97,12 +97,7 @@ export const Genre = {
   NEUMORPHISM: 2,
   CYBERPUNK: 3,
   MINIMALIST: 4,
-  MONOPRINT: 5,
-  // Extended genres from frontend
-  CYBER: 6,         // Cyber style (distinct from cyberpunk)
-  NEOBRUTALIST: 7,
-  LOUD: 8,
-  BASE: 9           // Default/neutral genre
+  MONOPRINT: 5
 } as const;
 
 export type Genre = typeof Genre[keyof typeof Genre];
@@ -113,12 +108,7 @@ export const GENRE_NAMES: Record<Genre, string> = {
   [Genre.NEUMORPHISM]: 'Neumorphism',
   [Genre.CYBERPUNK]: 'Cyberpunk',
   [Genre.MINIMALIST]: 'Minimalist',
-  [Genre.MONOPRINT]: 'Monoprint',
-  // Extended genre names
-  [Genre.CYBER]: 'Cyber',
-  [Genre.NEOBRUTALIST]: 'Neobrutalism',
-  [Genre.LOUD]: 'Loud',
-  [Genre.BASE]: 'Base'
+  [Genre.MONOPRINT]: 'Monoprint'
 };
 
 export const GENRE_CSS_CLASSES: Record<Genre, string> = {
@@ -127,12 +117,7 @@ export const GENRE_CSS_CLASSES: Record<Genre, string> = {
   [Genre.NEUMORPHISM]: 'genre-neumorphism',
   [Genre.CYBERPUNK]: 'genre-cyberpunk',
   [Genre.MINIMALIST]: 'genre-minimalist',
-  [Genre.MONOPRINT]: 'genre-monoprint',
-  // Extended genre CSS classes
-  [Genre.CYBER]: 'genre-cyber',
-  [Genre.NEOBRUTALIST]: 'genre-neobrutalist',
-  [Genre.LOUD]: 'genre-loud',
-  [Genre.BASE]: 'genre-base'
+  [Genre.MONOPRINT]: 'genre-monoprint'
 };
 
 // ============================================

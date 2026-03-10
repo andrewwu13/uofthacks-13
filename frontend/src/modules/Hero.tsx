@@ -28,11 +28,7 @@ export const Hero: React.FC<HeroProps> = ({
 
     // Genre-specific decorations
     const getDecoration = () => {
-        switch (genre) {
-            case Genre.CYBER: return '> ';
-            case Genre.NEOBRUTALIST: return '★ ';
-            default: return '';
-        }
+        return '';
     };
 
     return (

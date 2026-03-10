@@ -70,7 +70,7 @@ export const RenderingEngine: React.FC<RenderingEngineProps> = ({
             description: module.product.description,
             price: parseFloat(module.product.price),
             currency: module.product.currency,
-            imageUrl: module.product.image,
+            imageUrl: module.product.image || 'https://placehold.co/600x600/ebebeb/a3a3a3?text=Product+Image',
             vendor: module.product.vendor,
             category: 'General',
             url: module.product.url

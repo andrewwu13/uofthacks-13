@@ -28,11 +28,7 @@ export const Testimonial: React.FC<TestimonialProps> = ({
 
     // Quote marks based on genre
     const getQuoteMark = () => {
-        switch (genre) {
-            case Genre.NEOBRUTALIST: return '★★★★★';
-            case Genre.CYBER: return '>> ';
-            default: return '"';
-        }
+        return '"';
     };
 
     return (
