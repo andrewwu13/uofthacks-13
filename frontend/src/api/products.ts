@@ -100,4 +100,22 @@ export async function fetchProductsBatch(
     return batch;
 }
 
+/**
+ * Request the backend to scrape a Shopify store for a given session.
+ */
+export async function scrapeStore(sessionId: string, url: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/scrape/${sessionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error scraping store:', error);
+        return false;
+    }
+}
+
 export { getSessionId };

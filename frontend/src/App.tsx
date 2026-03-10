@@ -14,6 +14,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { RenderingEngine } from './components/RenderingEngine';
+import { SetupPanel } from './components/SetupPanel';
 import { createProductModules, createProductBatch } from './utils/dummyData';
 import { fetchProducts } from './api/products';
 import type { ShopifyProduct, ProductModule, Genre } from './schema/types';
@@ -22,6 +23,7 @@ import { getInitialIdPool } from './schema/types';
 import { initTelemetry } from './tracking';
 import type { TelemetryBatch } from './tracking';
 import { useSSELayout } from './hooks/useSSELayout';
+import { getSessionId } from './api/products';
 
 // Backend API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -51,6 +53,9 @@ function App() {
 
   // Current modules being displayed
   const [modules, setModules] = useState<ProductModule[]>([]);
+
+  // Setup state
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
 
   // Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -108,7 +113,9 @@ function App() {
 
   // Initialize telemetry on mount
   useEffect(() => {
+    const savedSessionId = getSessionId();
     const manager = initTelemetry({
+      sessionId: savedSessionId,
       enableConsoleLog: true,
       onBatch: (batch) => {
         setBatchCount(prev => prev + 1);
@@ -126,8 +133,10 @@ function App() {
     };
   }, []);
 
-  // Fetch products on startup
+  // Fetch products on startup or after setup
   useEffect(() => {
+    if (!isSetupComplete) return;
+
     async function loadProducts() {
       setIsInitialLoading(true);
       setError(null);
@@ -158,7 +167,7 @@ function App() {
     }
 
     loadProducts();
-  }, []);
+  }, [isSetupComplete]);
 
 
   // Handle product click
@@ -205,6 +214,11 @@ function App() {
   }, [allProducts, modules.length]);
 
 
+
+  // Setup Panel state
+  if (!isSetupComplete) {
+    return <SetupPanel sessionId={sessionId} onComplete={() => setIsSetupComplete(true)} />;
+  }
 
   // Loading state
   if (isInitialLoading) {
