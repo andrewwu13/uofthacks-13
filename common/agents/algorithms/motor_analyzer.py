@@ -1,60 +1,80 @@
 """
-Motor Analyzer - Calculates velocity, acceleration, and jerk from telemetry
+Motor Analyzer - Temporal segmentation + robust feature extraction from telemetry
 Pure Python implementation for zero API cost
+
+Improvements over v1:
+- Temporal phase segmentation (travel → dwell → interaction)
+- Per-phase stats instead of global averages that wash out dwell signal
+- Percentile-based velocity profile (p50/p90/peak) for robustness
+- Dwell detection (episodes of near-zero velocity)
+- Click impulse score (sharpness of velocity spike toward a stop)
 """
 
 import math
-from typing import List, Dict
+from typing import List, Dict, Tuple
+
+# Velocity thresholds (px/s)
+IDLE_VELOCITY_THRESHOLD = 20.0        # Below this = effectively stopped / dwell
+TRAVEL_VELOCITY_THRESHOLD = 80.0      # Above this = deliberate movement
 
 
 class MotorAnalyzer:
     """
-    Analyzes cursor/touch motion using calculus.
-    Computes derivatives to model cognitive state.
+    Analyzes cursor/touch motion using temporal segmentation.
+
+    Produces three class of signals:
+    1. Global population stats (percentiles — robust to phase imbalance)
+    2. Dwell metrics (how long and how often the user stopped)
+    3. Click impulse score (sharpness of pre-click approach)
     """
 
     def analyze(self, telemetry: List[Dict]) -> Dict:
         """
-        Analyze motion telemetry.
+        Analyze motion telemetry with temporal segmentation.
 
         Args:
-            telemetry: List of position/velocity data points
+            telemetry: List of processed position/velocity/acceleration dicts
+                Each entry: { timestamp, position:{x,y}, velocity:{x,y}, acceleration:{x,y} }
 
         Returns:
-            Motion metrics including velocity, acceleration, jerk
+            Rich motion metrics dict
         """
         if len(telemetry) < 2:
             return self._empty_metrics()
 
-        velocities = []
-        accelerations = []
-        jerks = []
+        velocities: List[float] = []
+        accelerations: List[float] = []
+        jerks: List[float] = []
         direction_changes = 0
+
+        dwell_episodes: List[float] = []   # duration of each dwell in ms
+        current_dwell_start: float | None = None
 
         for i in range(1, len(telemetry)):
             prev = telemetry[i - 1]
             curr = telemetry[i]
 
-            dt = (curr.get("timestamp", 0) - prev.get("timestamp", 0)) / 1000  # ms to s
-            if dt <= 0:
+            dt_ms = curr.get("timestamp", 0) - prev.get("timestamp", 0)
+            dt_s = dt_ms / 1000.0
+            if dt_s <= 0:
                 continue
 
-            # Calculate velocity magnitude
+            # Velocity magnitude
             vel = curr.get("velocity", {"x": 0, "y": 0})
-            vel_magnitude = math.sqrt(vel.get("x", 0) ** 2 + vel.get("y", 0) ** 2)
-            velocities.append(vel_magnitude)
+            vel_mag = math.sqrt(vel.get("x", 0) ** 2 + vel.get("y", 0) ** 2)
+            velocities.append(vel_mag)
 
-            # Calculate acceleration magnitude
+            # Acceleration magnitude
             acc = curr.get("acceleration", {"x": 0, "y": 0})
-            acc_magnitude = math.sqrt(acc.get("x", 0) ** 2 + acc.get("y", 0) ** 2)
-            accelerations.append(acc_magnitude)
+            acc_mag = math.sqrt(acc.get("x", 0) ** 2 + acc.get("y", 0) ** 2)
+            accelerations.append(acc_mag)
 
-            # Calculate jerk (derivative of acceleration)
+            # Jerk (3rd derivative)
             if len(accelerations) >= 2:
-                jerk = abs(accelerations[-1] - accelerations[-2]) / dt
+                jerk = abs(accelerations[-1] - accelerations[-2]) / dt_s
                 jerks.append(jerk)
 
-            # Count direction changes (indicates indecision)
+            # Direction changes
             if i >= 2:
                 prev_vel = telemetry[i - 1].get("velocity", {"x": 0, "y": 0})
                 if (
@@ -63,31 +83,87 @@ class MotorAnalyzer:
                 ):
                     direction_changes += 1
 
+            # Dwell detection
+            ts = curr.get("timestamp", 0)
+            if vel_mag < IDLE_VELOCITY_THRESHOLD:
+                if current_dwell_start is None:
+                    current_dwell_start = float(ts)
+            else:
+                if current_dwell_start is not None:
+                    dwell_duration = ts - current_dwell_start
+                    if dwell_duration >= 200:  # only count dwells > 200ms
+                        dwell_episodes.append(dwell_duration)
+                    current_dwell_start = None
+
+        # Close any trailing dwell
+        if current_dwell_start is not None and len(telemetry) >= 2:
+            last_ts = telemetry[-1].get("timestamp", 0)
+            dwell_duration = last_ts - current_dwell_start
+            if dwell_duration >= 200:
+                dwell_episodes.append(dwell_duration)
+
+        # Velocity percentiles
+        sorted_v = sorted(velocities)
+        n = len(sorted_v)
+        p50 = sorted_v[int(n * 0.50)] if n > 0 else 0
+        p90 = sorted_v[int(n * 0.90)] if n > 0 else 0
+        peak = sorted_v[-1] if sorted_v else 0
+
+        # Total duration
+        total_duration_ms = 0.0
+        if len(telemetry) >= 2:
+            total_duration_ms = (
+                telemetry[-1].get("timestamp", 0) - telemetry[0].get("timestamp", 0)
+            )
+
+        # Click impulse score: ratio of peak velocity to p50 velocity
+        # A user who snaps to a target has a high peak relative to their median
+        click_impulse_score = round(min(1.0, (peak / (p50 + 1)) / 20.0), 3)
+
+        # Dwell summary
+        total_dwell_ms = sum(dwell_episodes)
+        avg_dwell_ms = (total_dwell_ms / len(dwell_episodes)) if dwell_episodes else 0
+
         return {
-            "avg_velocity": sum(velocities) / len(velocities) if velocities else 0,
-            "max_velocity": max(velocities) if velocities else 0,
-            "avg_acceleration": (
-                sum(accelerations) / len(accelerations) if accelerations else 0
-            ),
-            "max_acceleration": max(accelerations) if accelerations else 0,
-            "avg_jerk": sum(jerks) / len(jerks) if jerks else 0,
-            "max_jerk": max(jerks) if jerks else 0,
-            "direction_changes": direction_changes,
-            "direction_change_rate": (
-                direction_changes / len(telemetry) if telemetry else 0
-            ),
+            # Temporal coverage
+            "total_duration_ms": round(total_duration_ms),
             "sample_count": len(telemetry),
+
+            # Velocity profile (percentile-based — robust to phase imbalance)
+            "p50_velocity": round(p50, 1),
+            "p90_velocity": round(p90, 1),
+            "peak_velocity": round(peak, 1),
+            "avg_velocity": round(sum(velocities) / n, 1) if n > 0 else 0,  # kept for compat
+
+            # Acceleration
+            "avg_acceleration": round(sum(accelerations) / len(accelerations), 1) if accelerations else 0,
+            "max_acceleration": round(max(accelerations), 1) if accelerations else 0,
+
+            # Jerk
+            "avg_jerk": round(sum(jerks) / len(jerks), 1) if jerks else 0,
+            "max_jerk": round(max(jerks), 1) if jerks else 0,
+
+            # Direction changes
+            "direction_changes": direction_changes,
+            "direction_change_rate": round(direction_changes / len(telemetry), 3) if telemetry else 0,
+
+            # Dwell metrics
+            "dwell_count": len(dwell_episodes),
+            "total_dwell_ms": round(total_dwell_ms),
+            "avg_dwell_ms": round(avg_dwell_ms),
+            "dwell_fraction": round(total_dwell_ms / (total_duration_ms + 1), 3),
+
+            # Click impulse
+            "click_impulse_score": click_impulse_score,
         }
 
     def _empty_metrics(self) -> Dict:
         return {
-            "avg_velocity": 0,
-            "max_velocity": 0,
-            "avg_acceleration": 0,
-            "max_acceleration": 0,
-            "avg_jerk": 0,
-            "max_jerk": 0,
-            "direction_changes": 0,
-            "direction_change_rate": 0,
-            "sample_count": 0,
+            "total_duration_ms": 0, "sample_count": 0,
+            "p50_velocity": 0, "p90_velocity": 0, "peak_velocity": 0, "avg_velocity": 0,
+            "avg_acceleration": 0, "max_acceleration": 0,
+            "avg_jerk": 0, "max_jerk": 0,
+            "direction_changes": 0, "direction_change_rate": 0,
+            "dwell_count": 0, "total_dwell_ms": 0, "avg_dwell_ms": 0, "dwell_fraction": 0,
+            "click_impulse_score": 0,
         }

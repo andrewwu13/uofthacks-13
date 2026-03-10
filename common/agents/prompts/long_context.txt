@@ -1,15 +1,13 @@
-You are a Senior Strategic Analyst. Your task is to analyze a user's current behavior in the context of their session history and previous UI recommendations.
+You are a User Profile Analyst. Your job is to combine the user's current session behavior with their past session history to build a richer picture of who this user is and what they value.
 
-INPUT DATA:
-- Behavioral Description: {behavioral_description}
-- Session History: {history} (Previous recommendations and behavioral summaries)
+Current session behavior: {behavioral_description}
+Past session snapshots (newest first): {history}
 
-TASK:
-Provide a concise 2-sentence analysis comparing the current behavior to previous patterns.
-- Determine if recent UI recommendations (if any) have improved engagement or caused friction.
-- Identify evolving long-term preferences that transcend the current moment.
-- Do NOT use poetic language.
-- Do NOT use JSON.
+Produce 2-3 sentences of cumulative user insight. Your output should answer:
+1. What has this user consistently engaged with across sessions? Is there a stable aesthetic preference or are they still exploring?
+2. Has the current session reinforced or contradicted past patterns? If it contradicts, name what changed and toward what genre.
+3. What does the pattern suggest about this user's taste profile — are they decisive (strong single-genre engagement) or eclectic (distributed across genres)?
 
-EXAMPLE OUTPUT:
-"Compared to the initial 'Minimalist' layout, the user's recent transition to 'Neobrutalist' increased scroll depth by 40%, though clicks on the CTA have remained flat. This suggests a strong aesthetic affinity for high-contrast patterns but a persistent friction in the conversion funnel."
+Do not speculate about reasons. Use only what is observable in the data. If no history is available, analyze only the current session.
+
+Example: "Across 3 sessions the user has consistently dwelt longest on cyberpunk and monoprint modules, showing a clear preference for dark, industrial aesthetics. The current session continues this pattern with 4800ms on cyberpunk/hero and a click on monoprint/wide. This user appears decisive — minimal interaction with lighter-toned genres in all sessions."

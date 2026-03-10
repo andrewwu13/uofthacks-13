@@ -42,9 +42,18 @@ def motor_state_node(state: AgentState) -> dict:
     """Stream 0: Fast motor analysis (no LLM)"""
     telemetry = state.get("telemetry_batch", [])
     result = motor_state_stream.process(telemetry)
+
+    # Build human-readable metrics dict for the data cleaning prompt
+    # This replaces the raw metrics dict with structured, labeled values
+    motor_summary = motor_state_stream.classifier.build_motor_summary(
+        state=result["state"],
+        confidence=result["confidence"],
+        metrics=result["metrics"],
+    )
+
     return {
         "motor_state": result["state"],
-        "motor_metrics": result["metrics"],
+        "motor_metrics": motor_summary,
     }
 
 
