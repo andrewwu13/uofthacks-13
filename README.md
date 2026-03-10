@@ -132,11 +132,11 @@ See [AGENTS.md](AGENTS.md) for detailed agent architecture.
 │   └── src/schema/        # Schema-driven rendering
 ├── backend/               # FastAPI server
 │   ├── app/api/           # REST endpoints
-│   ├── app/pipeline/      # Post-Reducer DB Pipeline
+│   ├── app/pipeline/      # Data processing pipeline
 │   ├── app/models/        # Pydantic models
-│   └── app/db/            # Redis, MongoDB, Vector clients
-├── agents/                # LangGraph multi-agent system
-├── docker-compose.yml     # Docker services configuration
+│   └── app/db/            # DB clients (Redis, MongoDB, Vector)
+├── common/                # Shared docker configs and logs
+├── docker-compose.yml     # Container orchestration
 └── AGENTS.md              # Agent architecture documentation
 ```
 

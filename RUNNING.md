@@ -5,15 +5,12 @@
 - Node.js and Python 3.11+ installed (for local non-Docker development).
 
 ## Running with Docker Compose (Recommended)
-1. Open a terminal and navigate to the `common` directory:
-   ```bash
-   cd common
-   ```
+1. Open a terminal in the project root directory.
 2. Start the services using Docker Compose:
    ```bash
    docker compose up --build
    ```
-   This will start the backend API, the background workers, the frontend, Redis, MongoDB, and Redpanda (Kafka).
+   This will start the backend API, workers, frontend, Redis, MongoDB, and Redpanda.
 
 3. Access the application:
    - **Frontend**: http://localhost:3000
