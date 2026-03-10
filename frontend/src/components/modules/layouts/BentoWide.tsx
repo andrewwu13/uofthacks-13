@@ -35,7 +35,7 @@ export const BentoWide: React.FC<BentoLayoutProps> = ({
                     src={product.imageUrl}
                     alt={product.title}
                     className="product-img wide-img"
-                    loading="lazy"
+                    loading="eager"
                 />
             )}
 

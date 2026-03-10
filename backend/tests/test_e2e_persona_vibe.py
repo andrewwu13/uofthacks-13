@@ -120,7 +120,7 @@ async def test_persona_e2e():
     from app.vector.vector_store import initialize_vector_store_async
     await initialize_vector_store_async()
     
-    template_id = await get_recommended_template_id_async(vibe_summary)
+    template_id, is_explore = await get_recommended_template_id_async(vibe_summary)
     matched_module = get_module_by_id(template_id)
 
     print(f"\n[Result] Top Recommended Module:")

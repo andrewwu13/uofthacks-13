@@ -58,8 +58,8 @@ def motor_state_node(state: AgentState) -> dict:
 
 
 async def data_cleaning_node(state: AgentState) -> dict:
-    """Phase 1: Objective data cleaning (Lock: 1)"""
-    llm_concurrency_manager.set_limit(1)
+    """Phase 1: Objective data cleaning (Lock: 2)"""
+    llm_concurrency_manager.set_limit(2)
     
     description = await data_cleaning_agent.clean(
         session_id=state["session_id"],
@@ -102,8 +102,8 @@ async def long_context_node(state: AgentState) -> dict:
 
 
 async def preference_reduction_node(state: AgentState) -> dict:
-    """Phase 3: Final vibe synthesis (Lock: 1)"""
-    llm_concurrency_manager.set_limit(1)
+    """Phase 3: Final vibe synthesis (Lock: 2)"""
+    llm_concurrency_manager.set_limit(2)
     
     summary = await preference_reducer.reduce(
         session_id=state["session_id"],

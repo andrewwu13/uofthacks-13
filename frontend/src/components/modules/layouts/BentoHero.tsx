@@ -29,7 +29,7 @@ export const BentoHero: React.FC<BentoLayoutProps> = ({
                     src={product.imageUrl}
                     alt={product.title}
                     className="product-img hero-img"
-                    loading="lazy"
+                    loading="eager"
                 />
             )}
 

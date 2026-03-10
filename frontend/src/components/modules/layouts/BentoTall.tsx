@@ -30,7 +30,7 @@ export const BentoTall: React.FC<BentoLayoutProps> = ({
                     src={product.imageUrl}
                     alt={product.title}
                     className="product-img tall-img"
-                    loading="lazy"
+                    loading="eager"
                 />
             )}
 

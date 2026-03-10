@@ -1,14 +1,13 @@
 /**
  * Gen UI Schema Types
  * 
- * Module ID System:
+ * Module ID System (1:1 with backend - 24 modules):
  * Each module has a unique ID that encodes:
- * - Genre (0-5): The visual style (from drafting site)
- * - BentoType (0-3): The bento grid size
- * - Variation (0-2): Style variation within genre/type combo
+ * - Genre (0-5): The visual style (glassmorphism, brutalism, etc.)
+ * - BentoType (0-3): The bento grid size (hero, wide, tall, small)
  * 
- * ID = (genre * 12) + (bentoType * 3) + variation
- * This gives us 6 × 4 × 3 = 72 unique bento module templates
+ * ID = (genre * 4) + bentoType
+ * This gives us 6 × 4 = 24 unique bento module templates (0-23)
  * 
  * Semantic Module IDs: mod-{genre}-{bentoType}-{instanceId}
  * Example: mod-glassmorphism-hero-001
@@ -284,23 +283,24 @@ export interface LayoutConfig {
 }
 
 // ============================================
-// ID ENCODING/DECODING FUNCTIONS
+// ID ENCODING/DECODING FUNCTIONS (24-module system - 1:1 with backend)
 // ============================================
 
-// New system: 6 genres × 4 bento types × 3 variations = 72 modules
-const MODULES_PER_GENRE = 12; // 4 bento types × 3 variations
+// System: 6 genres × 4 bento types = 24 modules (IDs 0-23)
+// This matches the backend's module ID system exactly
+const MODULES_PER_GENRE = 4; // 4 bento types per genre
 const BENTO_TYPES_COUNT = 4;
-const VARIATIONS_COUNT = 3;
 
 /**
- * Encode genre, bentoType, and variation into integer ID (0-71)
+ * Encode genre and bentoType into integer ID (0-23)
+ * Formula: (genre * 4) + bentoType - matches backend exactly!
  */
 export function encodeModuleId(
   genre: Genre,
   bentoType: BentoType,
-  variation: Variation = 0
+  _variation: Variation = 0 // Ignored - kept for API compatibility
 ): number {
-  return (genre * MODULES_PER_GENRE) + (bentoType * VARIATIONS_COUNT) + variation;
+  return (genre * MODULES_PER_GENRE) + bentoType;
 }
 
 /**
@@ -349,34 +349,76 @@ export function getModuleMetadata(id: number, instanceId?: number): ModuleMetada
 }
 
 /**
- * Decode a module ID into its components
+ * Decode a module ID into its components (24-module system - 1:1 with backend)
  */
 export function decodeModuleId(id: number): ModuleTag {
   const genre = Math.floor(id / MODULES_PER_GENRE) as Genre;
-  const remainder = id % MODULES_PER_GENRE;
-  const bentoType = Math.floor(remainder / VARIATIONS_COUNT) as BentoType;
-  const variation = (remainder % VARIATIONS_COUNT) as Variation;
+  const bentoType = (id % MODULES_PER_GENRE) as BentoType;
 
   return {
     genre,
     genreName: GENRE_NAMES[genre],
     bentoType,
     bentoTypeName: BENTO_TYPE_NAMES[bentoType],
-    variation,
+    variation: 0, // Not used in 24-module system
     isLoud: genre === Genre.BRUTALISM,
   };
 }
 
+// ============================================
+// BACKEND ID CONVERSION (24-module to 72-module)
+// ============================================
+// Backend uses: (genre * 4) + layout = 0-23
+// Frontend uses: (genre * 12) + (bentoType * 3) + variation = 0-71
+
+const BACKEND_MODULES_PER_GENRE = 4;
+
 /**
- * Get all module IDs (72 total)
+ * Convert a backend module ID (0-23) to a frontend module ID (0-71).
+ * This is needed because the backend's vector matching operates on 24 modules
+ * while the frontend renders 72 modules (with variations).
+ * 
+ * @param backendId - The module ID from backend (0-23)
+ * @returns Frontend-compatible module ID (0-71)
+ */
+export function convertBackendIdToFrontend(backendId: number): number {
+  // Decode backend ID: genre = floor(id / 4), layout = id % 4
+  const backendGenre = Math.floor(backendId / BACKEND_MODULES_PER_GENRE);
+  const backendLayout = backendId % BACKEND_MODULES_PER_GENRE;
+
+  // Map backend layout (0-3) to frontend bentoType
+  // 0=hero, 1=wide, 2=tall, 3=small
+  const bentoType = backendLayout as BentoType;
+
+  // Encode to frontend ID using variation 0 (default)
+  return encodeModuleId(backendGenre as Genre, bentoType, 0);
+}
+
+/**
+ * Get the frontend-compatible ID pool for initial display (24-module system).
+ * Returns IDs 0-5: one per genre (hero bento type).
+ */
+export function getInitialIdPool(): number[] {
+  // Return IDs for one module per genre (hero type = 0)
+  // These match backend's [0, 1, 2, 3, 4, 5] exactly!
+  return [
+    encodeModuleId(Genre.GLASSMORPHISM, BentoType.HERO),  // 0
+    encodeModuleId(Genre.BRUTALISM, BentoType.HERO),      // 1
+    encodeModuleId(Genre.NEUMORPHISM, BentoType.HERO),    // 2
+    encodeModuleId(Genre.CYBERPUNK, BentoType.HERO),      // 3
+    encodeModuleId(Genre.MINIMALIST, BentoType.HERO),     // 4
+    encodeModuleId(Genre.MONOPRINT, BentoType.HERO),      // 5
+  ];
+}
+
+/**
+ * Get all module IDs (24 total - 1:1 with backend)
  */
 export function getAllModuleIds(): number[] {
   const ids: number[] = [];
   for (let genre = 0; genre < 6; genre++) {
     for (let bentoType = 0; bentoType < BENTO_TYPES_COUNT; bentoType++) {
-      for (let variation = 0; variation < VARIATIONS_COUNT; variation++) {
-        ids.push(encodeModuleId(genre as Genre, bentoType as BentoType, variation as Variation));
-      }
+      ids.push(encodeModuleId(genre as Genre, bentoType as BentoType, 0));
     }
   }
   return ids;
@@ -387,32 +429,27 @@ export function getAllModuleIds(): number[] {
  */
 export function getRandomModuleOfBentoType(bentoType: BentoType): number {
   const genre = Math.floor(Math.random() * 6) as Genre;
-  const variation = Math.floor(Math.random() * 3) as Variation;
-  return encodeModuleId(genre, bentoType, variation);
+  return encodeModuleId(genre, bentoType, 0);
 }
 
 /**
- * Get all module IDs of a specific bento type
+ * Get all module IDs of a specific bento type (4 per bento type)
  */
 export function getModulesOfBentoType(bentoType: BentoType): number[] {
   const ids: number[] = [];
   for (let genre = 0; genre < 6; genre++) {
-    for (let variation = 0; variation < VARIATIONS_COUNT; variation++) {
-      ids.push(encodeModuleId(genre as Genre, bentoType, variation as Variation));
-    }
+    ids.push(encodeModuleId(genre as Genre, bentoType, 0));
   }
   return ids;
 }
 
 /**
- * Get all module IDs of a specific genre
+ * Get all module IDs of a specific genre (4 per genre)
  */
 export function getModulesOfGenre(genre: Genre): number[] {
   const ids: number[] = [];
   for (let bentoType = 0; bentoType < BENTO_TYPES_COUNT; bentoType++) {
-    for (let variation = 0; variation < VARIATIONS_COUNT; variation++) {
-      ids.push(encodeModuleId(genre, bentoType as BentoType, variation as Variation));
-    }
+    ids.push(encodeModuleId(genre, bentoType as BentoType, 0));
   }
   return ids;
 }
