@@ -42,9 +42,18 @@ def motor_state_node(state: AgentState) -> dict:
     """Stream 0: Fast motor analysis (no LLM)"""
     telemetry = state.get("telemetry_batch", [])
     result = motor_state_stream.process(telemetry)
+
+    # Build human-readable metrics dict for the data cleaning prompt
+    # This replaces the raw metrics dict with structured, labeled values
+    motor_summary = motor_state_stream.classifier.build_motor_summary(
+        state=result["state"],
+        confidence=result["confidence"],
+        metrics=result["metrics"],
+    )
+
     return {
         "motor_state": result["state"],
-        "motor_metrics": result["metrics"],
+        "motor_metrics": motor_summary,
     }
 
 
@@ -62,8 +71,8 @@ async def data_cleaning_node(state: AgentState) -> dict:
 
 
 async def short_context_node(state: AgentState) -> dict:
-    """Phase 2A: Short-term intent analysis (Lock: 2)"""
-    # Note: set_limit is called in the entry point of Phase 2
+    """Phase 2A: Short-term intent analysis (Lock: 1)"""
+    llm_concurrency_manager.set_limit(1)
     analysis = await short_context_agent.analyze(
         session_id=state["session_id"],
         behavioral_description=state["behavioral_description"],
@@ -72,7 +81,7 @@ async def short_context_node(state: AgentState) -> dict:
 
 
 async def long_context_node(state: AgentState) -> dict:
-    """Phase 2B: Long-term history analysis (Lock: 2)"""
+    """Phase 2B: Long-term history analysis (Lock: 1)"""
     # 1. Fetch history from MongoDB
     from app.db.mongo_client import mongo_client
     history = []
@@ -104,40 +113,26 @@ async def preference_reduction_node(state: AgentState) -> dict:
     return {"vibe_summary": summary}
 
 
-def phase_2_concurrency_node(state: AgentState) -> dict:
-    """Utility node to set concurrency before Phase 2"""
-    llm_concurrency_manager.set_limit(2)
-    return {}
-
-
 def create_agent_graph() -> StateGraph:
     """
     Reworked Graph Flow:
-    Motor -> Cleaning (1) -> Context Parallel (2) -> Reduction (1)
+    Motor -> Cleaning (1) -> Short Context (1) -> Long Context (1) -> Reduction (1)
     """
     workflow = StateGraph(AgentState)
 
     # Add nodes
     workflow.add_node("motor_state", motor_state_node)
     workflow.add_node("data_cleaning", data_cleaning_node)
-    workflow.add_node("p2_concurrency", phase_2_concurrency_node)
     workflow.add_node("short_context", short_context_node)
     workflow.add_node("long_context", long_context_node)
     workflow.add_node("reduction", preference_reduction_node)
 
-    # Sequential flow with parallel middle
+    # Sequential flow
     workflow.add_edge(START, "motor_state")
     workflow.add_edge("motor_state", "data_cleaning")
-    workflow.add_edge("data_cleaning", "p2_concurrency")
-    
-    # Parallel Phase 2
-    workflow.add_edge("p2_concurrency", "short_context")
-    workflow.add_edge("p2_concurrency", "long_context")
-    
-    # Fan-in to Phase 3
-    workflow.add_edge("short_context", "reduction")
+    workflow.add_edge("data_cleaning", "short_context")
+    workflow.add_edge("short_context", "long_context")
     workflow.add_edge("long_context", "reduction")
-    
     workflow.add_edge("reduction", END)
 
     return workflow.compile()

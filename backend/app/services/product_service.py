@@ -15,10 +15,13 @@ class ProductService:
         # TODO: Fetch persisted preferences for session_id from DB
         # TODO: Filter or re-rank products based on those preferences
         """
-        if not os.path.exists(self.products_file):
+        session_file = f"session_{session_id}_products.json"
+        target_file = session_file if os.path.exists(session_file) else self.products_file
+        
+        if not os.path.exists(target_file):
             return []
 
-        with open(self.products_file, "r", encoding="utf-8") as f:
+        with open(target_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
 

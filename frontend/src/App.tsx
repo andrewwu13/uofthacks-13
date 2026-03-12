@@ -14,13 +14,16 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { RenderingEngine } from './components/RenderingEngine';
+import { SetupPanel } from './components/SetupPanel';
 import { createProductModules, createProductBatch } from './utils/dummyData';
 import { fetchProducts } from './api/products';
 import type { ShopifyProduct, ProductModule, Genre } from './schema/types';
 import { GENRE_NAMES } from './schema/types';
+import { getInitialIdPool } from './schema/types';
 import { initTelemetry } from './tracking';
 import type { TelemetryBatch } from './tracking';
 import { useSSELayout } from './hooks/useSSELayout';
+import { getSessionId } from './api/products';
 
 // Backend API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -51,6 +54,9 @@ function App() {
   // Current modules being displayed
   const [modules, setModules] = useState<ProductModule[]>([]);
 
+  // Setup state
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
+
   // Loading states
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -68,16 +74,19 @@ function App() {
 
   // Pool of Template IDs (Integers 0-71)
   // Initialize with diverse IDs from all 6 drafting genres
-  const idPoolRef = useRef<number[]>([0, 12, 24, 36, 48, 60]);
+  const idPoolRef = useRef<number[]>(getInitialIdPool());
   const idPool = idPoolRef.current;
 
   // SSE layout updates handler - AGGRESSIVE EVOLUTION
   const handleLayoutUpdate = useCallback((layout: any) => { // Using any for flexible payload
     console.log('[App] Layout update received:', layout);
 
-    // 1. Get Suggestion
+    // 1. Get Suggestion from backend (now 1:1 - no conversion needed!)
     const suggestedId = layout.suggested_id;
     if (typeof suggestedId === 'number') {
+      // Frontend and backend now use the same 24-module ID system
+      // ID is used directly without conversion!
+      console.log(`[Evolution] 📥 Using backend recommendation directly: ID ${suggestedId}`);
 
       // 2. AGGRESSIVE Update Pool - Replace HALF the pool (3 slots) with the new suggestion
       // This ensures faster convergence to recommended templates
@@ -104,7 +113,9 @@ function App() {
 
   // Initialize telemetry on mount
   useEffect(() => {
+    const savedSessionId = getSessionId();
     const manager = initTelemetry({
+      sessionId: savedSessionId,
       enableConsoleLog: true,
       onBatch: (batch) => {
         setBatchCount(prev => prev + 1);
@@ -122,8 +133,10 @@ function App() {
     };
   }, []);
 
-  // Fetch products on startup
+  // Fetch products on startup or after setup
   useEffect(() => {
+    if (!isSetupComplete) return;
+
     async function loadProducts() {
       setIsInitialLoading(true);
       setError(null);
@@ -154,7 +167,7 @@ function App() {
     }
 
     loadProducts();
-  }, []);
+  }, [isSetupComplete]);
 
 
   // Handle product click
@@ -201,6 +214,11 @@ function App() {
   }, [allProducts, modules.length]);
 
 
+
+  // Setup Panel state
+  if (!isSetupComplete) {
+    return <SetupPanel sessionId={sessionId} onComplete={() => setIsSetupComplete(true)} />;
+  }
 
   // Loading state
   if (isInitialLoading) {
@@ -264,9 +282,9 @@ function App() {
       {/* Debug Info */}
       <footer style={{
         padding: '1rem 2rem',
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        borderTop: '1px solid rgba(0, 0, 0, 0.1)',
         fontSize: '0.75rem',
-        color: '#71717a',
+        color: 'var(--text-muted)',
         textAlign: 'center'
       }}>
         Products: {modules.length} displayed / {allProducts.length} total • Scroll down for more

@@ -31,16 +31,17 @@
   --transition-speed: 0.3s;
   --grid-gap: 1.5rem;
 
-  /* Default (Glassmorphism) */
-  --bg-primary: #0a0514;
-  --bg-secondary: #0f1014;
-  --text-primary: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent: #a5b4fc;
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --card-border: rgba(255, 255, 255, 0.15);
+  /* Global Light Theme (Greyish White) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --app-bg: var(--bg-primary);
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --accent: #4f46e5;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(0, 0, 0, 0.1);
   --card-blur: 16px;
-  --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --card-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
@@ -99,16 +100,16 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: #18181b;
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #94a3b8;
 }
 
 /* ============================================
@@ -221,23 +222,6 @@ button {
   --g-accent: var(--accent);
 }
 
-/* GENRE 2: NEOBRUTALIST - Bold, raw, playful chaos */
-.genre-neobrutalist {
-  --g-bg: #facc15;
-  --g-bg-secondary: #fef08a;
-  --g-text: #000000;
-  --g-text-muted: #1c1917;
-  --g-accent: #000000;
-  --g-accent-hover: #292524;
-  --g-border: 4px solid #000000;
-  --g-shadow: 8px 8px 0px 0px #000000;
-  --g-radius: 0px;
-  --g-font: 'Inter', monospace;
-  --g-font-display: 'Inter', sans-serif;
-  --g-transform: uppercase;
-  --g-letter-spacing: 0.05em;
-}
-
 /* GENRE 3: GLASSMORPHISM - Ethereal, translucent, dreamy */
 .genre-glassmorphism {
   --g-bg: rgba(255, 255, 255, 0.05);
@@ -254,40 +238,8 @@ button {
   --g-transform: none;
   --g-letter-spacing: 0;
   --g-blur: blur(16px);
-}
-
-/* GENRE 4: LOUD - Attention-grabbing, gradient, energetic */
-.genre-loud {
-  --g-bg: linear-gradient(135deg, #f97316 0%, #dc2626 50%, #be123c 100%);
-  --g-bg-secondary: rgba(0, 0, 0, 0.2);
-  --g-text: #ffffff;
-  --g-text-muted: rgba(255, 255, 255, 0.85);
-  --g-accent: #ffffff;
-  --g-accent-hover: #fef3c7;
-  --g-border: none;
-  --g-shadow: 0 20px 40px -10px rgba(220, 38, 38, 0.4);
-  --g-radius: 24px;
-  --g-font: 'Inter', sans-serif;
-  --g-font-display: 'Inter', sans-serif;
-  --g-transform: none;
-  --g-letter-spacing: 0;
-}
-
-/* GENRE 5: CYBER - Matrix, terminal, hacker aesthetic */
-.genre-cyber {
-  --g-bg: #020617;
-  --g-bg-secondary: #0f172a;
-  --g-text: #4ade80;
-  --g-text-muted: #22c55e;
-  --g-accent: #22c55e;
-  --g-accent-hover: #86efac;
-  --g-border: 1px dashed #22c55e;
-  --g-shadow: 0 0 20px rgba(34, 197, 94, 0.15), inset 0 0 60px rgba(34, 197, 94, 0.03);
-  --g-radius: 4px;
-  --g-font: 'JetBrains Mono', 'Courier New', monospace;
-  --g-font-display: 'JetBrains Mono', monospace;
-  --g-transform: none;
-  --g-letter-spacing: 0;
+  --g-backdrop-hue: rgba(167, 139, 250, 0.3);
+  /* Soft purple/blue for glassmorphism override */
 }
 
 /* ============================================
@@ -302,9 +254,9 @@ button {
 
 .app-header {
   padding: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   text-align: center;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
@@ -319,7 +271,7 @@ button {
 }
 
 .app-header p {
-  color: #71717a;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }
 
@@ -354,11 +306,11 @@ button {
   justify-content: center;
   gap: 1.5rem;
   padding: 0.5rem 1rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 0.75rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -400,6 +352,36 @@ button {
 .module-wrapper {
   display: flex;
   min-height: 0;
+  position: relative;
+  z-index: 1;
+  /* Ensure child stays above pseudo-element */
+}
+
+/* 
+ * Backdrop Plate 
+ * This creates the "plate" that sits behind the "cracker" (the module card).
+ * It uses a large, soft blur to blend into the overall background gradient.
+ */
+.module-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  right: -10%;
+  bottom: -10%;
+  background: radial-gradient(circle at center,
+      var(--g-backdrop-hue, transparent) 0%,
+      transparent 70%);
+  filter: blur(40px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.module-wrapper:hover::before {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 /* ============================================
@@ -450,6 +432,187 @@ button {
   min-height: 0;
   grid-column: span var(--bento-col-span, 1);
   grid-row: span var(--bento-row-span, 1);
+  position: relative;
+}
+
+/* Glassmorphism backboard with geometric shapes */
+.bento-item-wrapper.genre-glassmorphism {
+  padding: 8px;
+}
+
+.bento-item-wrapper.genre-glassmorphism::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background:
+    /* Large circle - coral */
+    radial-gradient(circle at 20% 30%, rgba(255, 107, 107, 0.7) 0%, transparent 50%),
+    /* Circle - teal */
+    radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.6) 0%, transparent 40%),
+    /* Circle - purple */
+    radial-gradient(circle at 60% 80%, rgba(167, 139, 250, 0.6) 0%, transparent 45%),
+    /* Small accent - yellow */
+    radial-gradient(circle at 15% 75%, rgba(253, 224, 71, 0.5) 0%, transparent 25%),
+    /* Triangle approximation using polygon - pink */
+    linear-gradient(135deg, rgba(236, 72, 153, 0.4) 0%, transparent 50%),
+    /* Blue accent */
+    radial-gradient(circle at 85% 70%, rgba(59, 130, 246, 0.5) 0%, transparent 30%),
+    /* Warm orange */
+    radial-gradient(circle at 40% 50%, rgba(249, 115, 22, 0.4) 0%, transparent 35%),
+    /* Base gradient */
+    linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(20, 184, 166, 0.2));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-glassmorphism>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Brutalism backboard - bold geometric shapes */
+.bento-item-wrapper.genre-brutalism {
+  padding: 6px;
+}
+
+.bento-item-wrapper.genre-brutalism::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background:
+    /* Bold yellow accent */
+    linear-gradient(135deg, rgba(255, 222, 3, 0.3) 0%, transparent 30%),
+    /* Sharp black diagonal */
+    linear-gradient(160deg, transparent 40%, rgba(0, 0, 0, 0.15) 40%, rgba(0, 0, 0, 0.15) 60%, transparent 60%),
+    /* Pink block */
+    linear-gradient(45deg, rgba(255, 0, 128, 0.25) 0%, transparent 40%),
+    /* Base off-white */
+    rgba(255, 253, 240, 0.6);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-brutalism>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Neumorphism backboard - soft pastel gradient */
+.bento-item-wrapper.genre-neumorphism {
+  padding: 8px;
+}
+
+.bento-item-wrapper.genre-neumorphism::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background:
+    /* Soft peach glow */
+    radial-gradient(ellipse at 30% 20%, rgba(255, 179, 186, 0.4) 0%, transparent 50%),
+    /* Soft lavender */
+    radial-gradient(ellipse at 70% 80%, rgba(216, 205, 255, 0.4) 0%, transparent 50%),
+    /* Warm cream */
+    radial-gradient(ellipse at 50% 50%, rgba(255, 248, 235, 0.5) 0%, transparent 60%),
+    /* Subtle blue tint */
+    linear-gradient(135deg, rgba(224, 242, 255, 0.3), rgba(255, 240, 245, 0.3));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-neumorphism>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cyberpunk backboard - neon grid and glow */
+.bento-item-wrapper.genre-cyberpunk {
+  padding: 6px;
+}
+
+.bento-item-wrapper.genre-cyberpunk::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background:
+    /* Grid lines */
+    repeating-linear-gradient(90deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(0, 200, 255, 0.04) 18px,
+      rgba(0, 200, 255, 0.04) 20px),
+    repeating-linear-gradient(0deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(0, 200, 255, 0.04) 18px,
+      rgba(0, 200, 255, 0.04) 20px),
+    /* Deep cyan glow */
+    radial-gradient(ellipse at 15% 25%, rgba(0, 200, 255, 0.2) 0%, transparent 40%),
+    /* Deep purple accent */
+    radial-gradient(ellipse at 85% 75%, rgba(138, 43, 226, 0.2) 0%, transparent 35%),
+    /* Darker base to avoid grey */
+    rgba(2, 2, 5, 0.95);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-cyberpunk>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Minimalist backboard - subtle clean texture */
+.bento-item-wrapper.genre-minimalist {
+  padding: 6px;
+}
+
+.bento-item-wrapper.genre-minimalist::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background:
+    /* Very subtle warm tint */
+    radial-gradient(ellipse at 60% 40%, rgba(255, 250, 245, 0.5) 0%, transparent 60%),
+    /* Barely there gray */
+    linear-gradient(180deg, rgba(250, 250, 252, 0.4), rgba(245, 245, 248, 0.3));
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-minimalist>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Monoprint backboard - subtle dot pattern */
+.bento-item-wrapper.genre-monoprint {
+  padding: 6px;
+}
+
+.bento-item-wrapper.genre-monoprint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background:
+    /* Subtle dot grid pattern */
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    /* Warm dark tint */
+    radial-gradient(ellipse at 50% 50%, rgba(30, 25, 20, 0.5) 0%, transparent 60%),
+    /* Dark base */
+    rgba(8, 8, 10, 0.9);
+  background-size: 20px 20px, 100% 100%, 100% 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bento-item-wrapper.genre-monoprint>* {
+  position: relative;
+  z-index: 1;
 }
 
 .bento-item {
@@ -469,6 +632,7 @@ button {
   cursor: pointer;
   width: 100%;
   height: 100%;
+  text-decoration: none;
 }
 
 .bento-item:hover {
@@ -508,8 +672,7 @@ button {
 
 .bento-hero .product-img {
   height: 60%;
-  border-radius: 24px 24px 0 0;
-  padding: 2rem;
+  padding: 0.5rem;
   background-color: #ebebeb;
 }
 
@@ -550,8 +713,7 @@ button {
 .bento-wide .product-img {
   width: 50%;
   height: 100%;
-  border-radius: 0 24px 24px 0;
-  padding: 1rem;
+  padding: 0.5rem;
   background-color: #ebebeb;
   flex-shrink: 0;
 }
@@ -576,8 +738,7 @@ button {
 
 .bento-tall .product-img {
   height: 55%;
-  border-radius: 24px 24px 0 0;
-  padding: 1rem;
+  padding: 0.5rem;
   background-color: #ebebeb;
 }
 
@@ -608,8 +769,7 @@ button {
 
 .bento-small .product-img {
   height: 60%;
-  border-radius: 24px 24px 0 0;
-  padding: 1rem;
+  padding: 0.5rem;
   background-color: #ebebeb;
 }
 
@@ -695,7 +855,6 @@ button {
 
 .bento-item.genre-glassmorphism .product-img,
 .bento-item[data-genre="Glassmorphism"] .product-img {
-  background: transparent;
   filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1));
 }
 
@@ -714,6 +873,7 @@ button {
   background-color: #fefce8;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  text-decoration: none;
 }
 
 .bento-item.genre-brutalism:hover,
@@ -722,11 +882,15 @@ button {
   box-shadow: 12px 12px 0px #000000;
 }
 
+.bento-item.genre-brutalism:active,
+.bento-item[data-genre="Brutalism"]:active {
+  transform: translate(0, 0);
+  box-shadow: 2px 2px 0px #000000;
+}
+
 .bento-item.genre-brutalism .product-img,
 .bento-item[data-genre="Brutalism"] .product-img {
-  border-radius: 0 !important;
   border-bottom: 3px solid #000;
-  background-color: transparent;
 }
 
 .bento-item.genre-brutalism::after,
@@ -777,12 +941,7 @@ button {
   box-shadow: 8px 8px 20px #d1d5db, -8px -8px 20px #ffffff;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-
-.bento-item.genre-neumorphism .product-img,
-.bento-item[data-genre="Neumorphism"] .product-img {
-  background: transparent;
-  border-radius: 24px 24px 0 0 !important;
+  text-decoration: none;
 }
 
 .bento-item.genre-neumorphism .bento-content,
@@ -819,9 +978,10 @@ button {
   border: 1px solid rgba(0, 255, 255, 0.2);
   box-shadow: 0 4px 20px rgba(0, 255, 255, 0.05);
   background: linear-gradient(0deg, rgba(13, 13, 13, 0.95), rgba(18, 18, 18, 0.9)),
-      repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0, 255, 255, 0.01) 4px, rgba(0, 255, 255, 0.01) 5px);
+    repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(0, 255, 255, 0.01) 4px, rgba(0, 255, 255, 0.01) 5px);
   position: relative;
   overflow: hidden;
+  text-decoration: none;
 }
 
 .bento-item.genre-cyberpunk:hover,
@@ -831,9 +991,11 @@ button {
   transform: translateY(-10px) scale(1.03);
 }
 
-.bento-item.genre-cyberpunk .product-img,
-.bento-item[data-genre="Cyberpunk"] .product-img {
-  background: transparent;
+.bento-item.genre-cyberpunk:active,
+.bento-item[data-genre="Cyberpunk"]:active {
+  border-color: rgba(255, 0, 255, 0.8);
+  box-shadow: 0 0 40px rgba(255, 0, 255, 0.3) inset, 0 4px 15px rgba(255, 0, 255, 0.2);
+  transform: translateY(-2px) scale(0.98);
 }
 
 .bento-item.genre-cyberpunk .bento-content,
@@ -866,6 +1028,7 @@ button {
   padding: 1.5rem;
   box-shadow: none;
   position: relative;
+  text-decoration: none;
 }
 
 .bento-item.genre-minimalist:hover {
@@ -874,11 +1037,15 @@ button {
   border-color: #d1d1d1;
 }
 
+.bento-item.genre-minimalist:active {
+  box-shadow: none;
+  transform: translateY(2px) scale(0.98);
+  border-color: #000;
+}
+
 .bento-item.genre-minimalist .product-img {
-  background: transparent;
-  border-radius: 0 !important;
   mix-blend-mode: multiply;
-  padding: 2rem;
+  padding: 0.5rem;
 }
 
 .bento-item.genre-minimalist .bento-content {
@@ -924,6 +1091,12 @@ button {
   border-radius: 4px;
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+}
+
+.bento-item.genre-monoprint:active {
+  border-color: #fff;
+  transform: translateY(2px) scale(0.98);
 }
 
 .bento-item.genre-monoprint::before {
@@ -934,10 +1107,6 @@ button {
   background-size: 10px 10px;
   opacity: 0.03;
   pointer-events: none;
-}
-
-.bento-item.genre-monoprint .product-img {
-  background: transparent;
 }
 
 .bento-item.genre-monoprint .bento-content {
@@ -1008,35 +1177,15 @@ button {
   z-index: 10;
 }
 
-.genre-base .module-badge {
-  background: var(--g-accent);
-  color: #fff;
-}
-
 .genre-minimalist .module-badge {
   background: #fff;
   color: #000;
-}
-
-.genre-neobrutalist .module-badge {
-  background: #000;
-  color: #facc15;
 }
 
 .genre-glassmorphism .module-badge {
   background: rgba(167, 139, 250, 0.3);
   color: #fff;
   backdrop-filter: blur(8px);
-}
-
-.genre-loud .module-badge {
-  background: #fff;
-  color: #dc2626;
-}
-
-.genre-cyber .module-badge {
-  background: #22c55e;
-  color: #000;
 }
 
 /* ============================================
@@ -1064,35 +1213,6 @@ button {
 }
 
 /* Button overrides for specific genres */
-.genre-neobrutalist .module-btn {
-  background: #000;
-  color: #facc15;
-  border: 3px solid #000;
-  box-shadow: 4px 4px 0 0 #000;
-}
-
-.genre-neobrutalist .module-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 0 #000;
-}
-
-.genre-loud .module-btn {
-  background: #fff;
-  color: #dc2626;
-}
-
-.genre-cyber .module-btn {
-  background: transparent;
-  color: #4ade80;
-  border: 1px solid #22c55e;
-}
-
-.genre-cyber .module-btn:hover {
-  background: #22c55e;
-  color: #000;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
-}
-
 .genre-glassmorphism .module-btn {
   background: rgba(167, 139, 250, 0.3);
   color: #fff;
@@ -1168,11 +1288,6 @@ button {
   margin-right: 0.25rem;
 }
 
-/* Neobrutalist product card special */
-.genre-neobrutalist .product-image-container {
-  border: 3px solid #000;
-}
-
 /* ============================================
    HERO MODULE
    ============================================ */
@@ -1238,22 +1353,6 @@ button {
   right: -30px;
 }
 
-/* Cyber hero scanlines */
-.genre-cyber .module-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(0deg,
-      transparent,
-      transparent 2px,
-      rgba(34, 197, 94, 0.03) 2px,
-      rgba(34, 197, 94, 0.03) 4px);
-  pointer-events: none;
-}
-
 /* ============================================
    BANNER MODULE
    ============================================ */
@@ -1285,13 +1384,6 @@ button {
 .module-banner .banner-highlight {
   color: var(--g-accent);
   font-weight: 700;
-}
-
-.genre-loud .banner-highlight {
-  color: #fff;
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
 }
 
 /* ============================================
@@ -1363,31 +1455,14 @@ button {
   line-height: 1;
 }
 
-.genre-neobrutalist .testimonial-quote-mark {
-  opacity: 1;
-  font-size: 1rem;
-  color: #000;
-}
-
-.genre-cyber .testimonial-quote-mark {
-  font-family: var(--g-font);
+.module-testimonial .testimonial-quote-mark {
+  font-size: 2rem;
+  line-height: 1;
   color: var(--g-accent);
-  opacity: 0.7;
+  opacity: 0.5;
 }
 
 .module-testimonial .testimonial-quote {
-  font-size: 1.125rem;
-  font-style: italic;
-  line-height: 1.6;
-  flex: 1;
-}
-
-.genre-neobrutalist .testimonial-quote {
-  font-style: normal;
-  font-weight: 600;
-}
-
-.module-testimonial .testimonial-author {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1399,11 +1474,6 @@ button {
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-}
-
-.genre-neobrutalist .testimonial-avatar {
-  border-radius: 0;
-  border: 2px solid #000;
 }
 
 .module-testimonial .testimonial-author-info {
@@ -1532,14 +1602,6 @@ button {
 
 .module-card {
   animation: fadeIn 0.5s ease-out;
-}
-
-.genre-cyber .module-card {
-  animation: fadeIn 0.5s ease-out, cyberGlow 3s ease-in-out infinite;
-}
-
-.genre-loud .module-badge {
-  animation: pulse 2s ease-in-out infinite;
 }
 
 /* ============================================
@@ -1690,7 +1752,8 @@ button {
 }
 
 .error-screen code {
-  background: #27272a;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -2057,30 +2120,9 @@ button {
 }
 
 /* GENRE-SPECIFIC TWEAKS */
-.genre-neobrutalist .module-btn {
-  box-shadow: 4px 4px 0 0 #000;
-  border: 2px solid #000;
-}
-
-.genre-neobrutalist .module-btn:hover {
-  box-shadow: 2px 2px 0 0 #000;
-  transform: translate(2px, 2px);
-}
-
 .genre-glassmorphism .module-card {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-}
-
-.genre-cyber .module-btn {
-  text-shadow: 0 0 5px currentColor;
-  border: 1px solid currentColor;
-  background: transparent;
-}
-
-.genre-cyber .module-btn:hover {
-  background: var(--g-accent);
-  color: #000;
 }
 
 /* RESPONSIVE GRID OVERRIDES */

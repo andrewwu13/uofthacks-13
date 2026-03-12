@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import type { RenderingEngineProps, BentoType } from '../schema/types';
 import { getModuleConfig } from './modules/ModuleRegistry';
 import { BENTO_GRID_SPANS, generateSemanticId } from '../schema/types';
@@ -11,80 +11,68 @@ export const RenderingEngine: React.FC<RenderingEngineProps> = ({
   isLoading
 }) => {
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Stable callback ref for onLoadMore
+  // Stable refs — always reflect latest values without re-subscribing
   const onLoadMoreRef = useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const isLoadingRef = useRef(isLoading);
+  isLoadingRef.current = isLoading;
 
-  // Intersection Observer for infinite scroll
-  useEffect(() => {
+  // Use a scroll event on the window for maximum reliability.
+  // IntersectionObserver requires the trigger element to LEAVE the
+  // extended zone before it can re-fire — which doesn't happen when
+  // new content pushes it down while you're still scrolling.
+  const checkScroll = useCallback(() => {
+    if (isLoadingRef.current || !hasMoreRef.current) return;
     if (!loadMoreRef.current) return;
 
-    if (observerRef.current) {
-      observerRef.current.disconnect();
+    const rect = loadMoreRef.current.getBoundingClientRect();
+    const triggerDistance = window.innerHeight + 800; // Load when within 800px
+
+    if (rect.top <= triggerDistance) {
+      onLoadMoreRef.current?.();
     }
+  }, []);
 
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && onLoadMoreRef.current) {
-          onLoadMoreRef.current();
-        }
-      },
-      {
-        root: null,
-        rootMargin: '400px',
-        threshold: 0.1
-      }
-    );
-
-    observerRef.current.observe(loadMoreRef.current);
+  useEffect(() => {
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    // Also fire immediately in case the user is already near the bottom
+    // (e.g. after new modules load and the trigger is still in range)
+    checkScroll();
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
+      window.removeEventListener('scroll', checkScroll);
     };
-  }, [loadMoreRef.current]);
+  }, [checkScroll, modules.length]); // Re-register after each batch so checkScroll fires immediately
 
   return (
     <div className="rendering-engine">
       <div className="bento-grid">
         {modules.map((module, index) => {
-          // Use the templateId to determine bento type/genre
-          const templateId = module.templateId !== undefined
-            ? module.templateId
-            : 0; // Fallback
-
-          // Get bento type from module or default to small
-          const bentoType = module.bentoType !== undefined
-            ? module.bentoType
-            : 0; // Default to BentoType.HERO
+          const templateId = module.templateId !== undefined ? module.templateId : 0;
+          const bentoType = module.bentoType !== undefined ? module.bentoType : 0;
 
           const config = getModuleConfig(templateId);
           const LayoutComponent = config.component;
 
-          // Calculate grid span based on bento type
           const gridSpan = BENTO_GRID_SPANS[bentoType as BentoType] || BENTO_GRID_SPANS[0];
-
-          // Generate semantic ID for this specific module instance
           const semanticId = module.semanticId || generateSemanticId(
             config.genre,
             bentoType as BentoType,
             index + 1
           );
 
-          // Map backend product data to props
           const productData = {
             id: module.product.id,
             title: module.product.title,
             description: module.product.description,
             price: parseFloat(module.product.price),
             currency: module.product.currency,
-            imageUrl: module.product.image,
+            imageUrl: module.product.image || 'https://placehold.co/600x600/ebebeb/a3a3a3?text=Product+Image',
             vendor: module.product.vendor,
-            category: 'General', // Fallback
+            category: 'General',
             url: module.product.url
           };
 
@@ -118,7 +106,7 @@ export const RenderingEngine: React.FC<RenderingEngineProps> = ({
         })}
       </div>
 
-      {/* Infinite scroll trigger */}
+      {/* Scroll anchor — used for position measurement */}
       <div ref={loadMoreRef} className="load-more-trigger">
         {isLoading && (
           <div className="loading-indicator">

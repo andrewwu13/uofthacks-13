@@ -9,7 +9,7 @@ class LLMConcurrencyManager:
     and enforce system-specific parallelization limits.
     """
     def __init__(self):
-        self._semaphore = asyncio.Semaphore(1)  # Default to 1
+        self._semaphore = asyncio.Semaphore(1)  # Allow 1 concurrent LLM calls
         self._current_limit = 1
 
     def set_limit(self, limit: int):

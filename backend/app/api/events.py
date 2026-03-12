@@ -309,7 +309,8 @@ async def process_telemetry_batch(batch: EventBatch):
                             )
 
                             # Get Integer ID (0-35) for sampling
-                            suggested_id = await get_recommended_template_id_async(
+                            # Returns (module_id, is_explore) for 80/20 exploit/explore
+                            suggested_id, is_explore = await get_recommended_template_id_async(
                                 user_profile_dict
                             )
 
@@ -317,8 +318,9 @@ async def process_telemetry_batch(batch: EventBatch):
                             recommended_genre = await get_recommended_genre_async(user_profile_dict)
                             profile_summary = user_profile_dict.get("vibe_summary", "New User")
 
+                            explore_tag = "[EXPLORE]" if is_explore else "[EXPLOIT]"
                             logger.info(
-                                f"Agent Workflow successful. Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})"
+                                f"Agent Workflow successful. {explore_tag} Profile: {profile_summary}, Suggested ID: {suggested_id} ({recommended_genre})"
                             )
 
                             # Store result in semantic cache for future requests
@@ -351,6 +353,7 @@ async def process_telemetry_batch(batch: EventBatch):
                                     "session_id": batch.session_id,
                                     "timestamp": datetime.datetime.now(datetime.timezone.utc),
                                     "vibe_summary": profile_summary,
+                                    "is_explore": is_explore,  # A/B tracking tag
                                     "constraints_summary": {
                                         "hard": {"genre_weights": {recommended_genre: 1.0}},
                                         "vibe": profile_summary

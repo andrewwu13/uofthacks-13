@@ -17,7 +17,10 @@ export const BentoHero: React.FC<BentoLayoutProps> = ({
     const price = parseFloat(product.price.toString()) || 0;
 
     return (
-        <div
+        <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`bento-item bento-hero genre-${GENRE_NAMES[genre].toLowerCase()} ${className}`}
             data-genre={GENRE_NAMES[genre]}
             data-bento-type={BENTO_TYPE_NAMES[bentoType]}
@@ -29,7 +32,7 @@ export const BentoHero: React.FC<BentoLayoutProps> = ({
                     src={product.imageUrl}
                     alt={product.title}
                     className="product-img hero-img"
-                    loading="lazy"
+                    loading="eager"
                 />
             )}
 
@@ -38,7 +41,7 @@ export const BentoHero: React.FC<BentoLayoutProps> = ({
                 <div className="price">${price.toFixed(2)}</div>
             </div>
 
-        </div>
+        </a>
     );
 };
 

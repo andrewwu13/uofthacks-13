@@ -7,7 +7,9 @@
  * Set VITE_USE_MOCK_DATA=true to use mock data without backend.
  */
 
-// Product type matching the backend schema
+/**
+ * Product type matching the backend schema
+ */
 export interface ShopifyProduct {
     id: number;
     store_domain: string;
@@ -41,7 +43,10 @@ const MOCK_PRODUCTS: ShopifyProduct[] = [
     { id: 12, store_domain: 'mock-store.myshopify.com', title: 'Canvas Tote Bag', handle: 'canvas-tote-bag', url: '#', price: '35.00', currency: 'USD', image: 'https://picsum.photos/seed/tote/400/400', vendor: 'CarryAll', description: 'Heavy-duty cotton canvas with leather handles' },
 ];
 
-// Generate a simple session ID for this browser session
+/**
+ * Generate a simple session ID for this browser session
+ * @returns {string} The unique session identifier
+ */
 function getSessionId(): string {
     let sessionId = sessionStorage.getItem('genui_session_id');
     if (!sessionId) {
@@ -82,6 +87,10 @@ export async function fetchProducts(): Promise<ShopifyProduct[]> {
 
 /**
  * Fetch a batch of products for infinite scroll
+ * @param {ShopifyProduct[]} allProducts - The full list of products
+ * @param {number} currentCount - The number of products already displayed
+ * @param {number} batchSize - How many products to include in this batch
+ * @returns {Promise<ShopifyProduct[]>} A slice of products for the next batch
  */
 export async function fetchProductsBatch(
     allProducts: ShopifyProduct[],
@@ -98,6 +107,27 @@ export async function fetchProductsBatch(
     }
 
     return batch;
+}
+
+/**
+ * Request the backend to scrape a Shopify store for a given session.
+ * @param {string} sessionId - The user's unique session ID
+ * @param {string} url - The Shopify store URL to scrape
+ * @returns {Promise<boolean>} True if the request was accepted, false otherwise
+ */
+export async function scrapeStore(sessionId: string, url: string): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/scrape/${sessionId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error scraping store:', error);
+        return false;
+    }
 }
 
 export { getSessionId };

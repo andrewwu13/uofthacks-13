@@ -18,7 +18,10 @@ export const BentoSmall: React.FC<BentoLayoutProps> = ({
     const price = parseFloat(product.price.toString()) || 0;
 
     return (
-        <div
+        <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`bento-item bento-small genre-${GENRE_NAMES[genre].toLowerCase()} ${className}`}
             data-genre={GENRE_NAMES[genre]}
             data-bento-type={BENTO_TYPE_NAMES[bentoType]}
@@ -29,17 +32,17 @@ export const BentoSmall: React.FC<BentoLayoutProps> = ({
                 <img
                     src={product.imageUrl}
                     alt={product.title}
-                    className="product-img thumb-img"
-                    loading="lazy"
+                    className="product-img small-img"
+                    loading="eager"
+                    fetchPriority="high"
                 />
             )}
 
             <div className="bento-content">
-                <h4 className="name">{product.title}</h4>
+                <h3 className="name" title={product.title}>{product.vendor || 'Shopify'}</h3>
                 <div className="price">${price.toFixed(2)}</div>
             </div>
-
-        </div>
+        </a>
     );
 };
 
